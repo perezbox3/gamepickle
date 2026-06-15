@@ -1,0 +1,186 @@
+.settings-page {
+  flex: 1;
+  padding: 40px 0 80px;
+}
+
+.settings-header {
+  margin-bottom: 36px;
+}
+
+.settings-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 720px;
+}
+
+.settings-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  margin-bottom: 12px;
+}
+
+.section-header {
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+.section-header p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* ── Steam ───────────────────────────────────────────── */
+.steam-linked {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--pickle-glow);
+  border: 1px solid rgba(94, 140, 49, 0.2);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+}
+
+.steam-linked div {
+  flex: 1;
+}
+
+.steam-linked strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.steam-linked p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.steam-input-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.settings-input {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.settings-input:focus {
+  border-color: var(--accent-dim);
+}
+
+.settings-input::placeholder {
+  color: var(--text-muted);
+}
+
+.settings-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.settings-hint svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ── Session ─────────────────────────────────────────── */
+.session-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.session-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 22px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 120px;
+}
+
+.session-option:hover {
+  border-color: var(--border-light);
+}
+
+.session-option.active {
+  background: var(--accent-glow);
+  border-color: rgba(201, 168, 76, 0.35);
+}
+
+.session-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.session-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* ── Genres ──────────────────────────────────────────── */
+.genre-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.genre-chip {
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.genre-chip:hover {
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+.genre-chip.banned {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+/* ── Save ────────────────────────────────────────────── */
+.settings-save {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
