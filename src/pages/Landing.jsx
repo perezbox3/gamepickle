@@ -7,6 +7,10 @@ export default function Landing({ user }) {
   const navigate = useNavigate()
 
   async function handleGoogleSignIn() {
+    if (!supabase) {
+      alert('Auth not configured yet — add your Supabase keys to .env')
+      return
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/library` },

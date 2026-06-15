@@ -45,6 +45,8 @@ function AuthedRoute({ user, loading, children }) {
       </div>
     )
   }
+  // Skip auth gate when Supabase isn't configured (local dev without .env)
+  if (!SUPABASE_CONFIGURED) return children
   if (!user) return <Navigate to="/" replace />
   return children
 }

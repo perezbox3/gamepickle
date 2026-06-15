@@ -1,0 +1,34 @@
+server {
+    listen 80;
+    server_name gamepickle.perezbox3.com;
+
+    # Redirect HTTP to HTTPS
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name gamepickle.perezbox3.com;
+
+    ssl_certificate     /etc/letsencrypt/live/gamepickle.perezbox3.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/gamepickle.perezbox3.com/privkey.pem;
+    include             /etc/letsencrypt/options-ssl-nginx.conf;
+
+    root /var/www/gamepickle.perezbox3.com/dist;
+    index index.html;
+
+    # SPA fallback — all routes serve index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Cache static assets
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+}
