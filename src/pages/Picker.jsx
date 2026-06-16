@@ -1,70 +1,135 @@
-import { useState } from 'react'
-import { ChevronRight, Shuffle, RotateCcw, Trophy } from 'lucide-react'
-import { questions } from '../lib/questions'
-import GameCard from '../components/GameCard'
+import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { CoverArt, Badge, fmtHours } from '../components/GameCard'
+import { GAMES, QUIZ, scoreGame } from '../lib/games'
 import './Picker.css'
 
-const DEMO_RESULTS = [
-  { appid: 1245620, name: 'Elden Ring', playtime_forever: 9800, img_icon_url: null, installed: true, reason: 'Matches your vibe for a deep solo challenge session.' },
-  { appid: 1091500, name: 'Cyberpunk 2077', playtime_forever: 4500, img_icon_url: null, installed: true, reason: 'Great story-driven experience for your available time.' },
-  { appid: 730, name: 'CS2', playtime_forever: 8900, img_icon_url: null, installed: true, reason: 'Quick competitive games fit your session length perfectly.' },
+function IconChevron(p) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="m9 6 6 6-6 6"/>
+    </svg>
+  )
+}
+function IconArrowLeft(p) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+  )
+}
+function IconShuffle(p) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+    </svg>
+  )
+}
+function IconStar(p) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="m12 3 2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8L6.6 19.6l1-6L3.3 9.4l6-.9z"/>
+    </svg>
+  )
+}
+function IconZap(p) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M13 2 3 14h9l-1 8 10-12h-9z"/>
+    </svg>
+  )
+}
+function IconCheck(p) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M20 6 9 17l-5-5"/>
+    </svg>
+  )
+}
+function IconLibrary(p) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M3 5h4v14H3zM10 5h4v14h-4z"/>
+      <path d="m17 5 4 13-3.7 1.3L13.5 6z"/>
+    </svg>
+  )
+}
+
+const FAFO_REASONS = [
+  "the dice have spoken. no take-backs.",
+  "you asked the universe. this is the answer.",
+  "stop overthinking it and go play this.",
+  "random number generator says: yes, this one.",
+  "the pickle has chosen. respect the pickle.",
 ]
 
 export default function Picker() {
+  const navigate = useNavigate()
+  const [phase, setPhase] = useState('quiz') // quiz | reel | results
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState({})
   const [results, setResults] = useState(null)
-  const [randomResult, setRandomResult] = useState(null)
+  const [randomMode, setRandomMode] = useState(false)
+  const [reelGame, setReelGame] = useState(GAMES[0])
 
-  const currentQ = questions[step]
-  const progress = (step / questions.length) * 100
-
-  function handleAnswer(value) {
-    const newAnswers = { ...answers, [currentQ.id]: value }
-    setAnswers(newAnswers)
-
-    if (step + 1 >= questions.length) {
-      setResults(DEMO_RESULTS)
-    } else {
+  function choose(qid, val) {
+    const next = { ...answers, [qid]: val }
+    setAnswers(next)
+    if (step < QUIZ.length - 1) {
       setStep(step + 1)
+    } else {
+      computeResults(next)
     }
   }
 
-  function handleRandom() {
-    const randomIdx = Math.floor(Math.random() * DEMO_RESULTS.length)
-    setRandomResult(DEMO_RESULTS[randomIdx])
-    setResults(null)
-    setStep(0)
-    setAnswers({})
+  function computeResults(ans) {
+    const scored = GAMES
+      .map(g => ({ game: g, ...scoreGame(g, ans) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+    setResults(scored)
+    setRandomMode(false)
+    setPhase('results')
+    window.scrollTo({ top: 0 })
   }
 
-  function handleReset() {
-    setStep(0)
-    setAnswers({})
-    setResults(null)
-    setRandomResult(null)
+  function fafo() {
+    setRandomMode(true)
+    setPhase('reel')
+    let ticks = 0
+    const total = 22 + Math.floor(Math.random() * 8)
+    const iv = setInterval(() => {
+      ticks++
+      setReelGame(GAMES[Math.floor(Math.random() * GAMES.length)])
+      if (ticks >= total) {
+        clearInterval(iv)
+        const pick = GAMES[Math.floor(Math.random() * GAMES.length)]
+        const reason = FAFO_REASONS[Math.floor(Math.random() * FAFO_REASONS.length)]
+        setResults([{ game: pick, reason, score: 0 }])
+        setReelGame(pick)
+        setTimeout(() => { setPhase('results'); window.scrollTo({ top: 0 }) }, 420)
+      }
+    }, 90)
   }
 
-  if (randomResult) {
+  function restart() {
+    setPhase('quiz'); setStep(0); setAnswers({}); setResults(null); setRandomMode(false)
+    window.scrollTo({ top: 0 })
+  }
+
+  /* REEL */
+  if (phase === 'reel') {
     return (
-      <div className="picker-page">
-        <div className="container picker-container">
-          <div className="picker-random-result">
-            <div className="random-emoji">🎲</div>
-            <h2>The dice have spoken.</h2>
-            <p>You're playing:</p>
-            <div className="random-game-card">
-              <GameCard game={randomResult} />
-            </div>
-            <div className="result-actions">
-              <button className="btn btn-pickle btn-lg" onClick={handleRandom}>
-                <Shuffle size={16} />
-                Roll Again
-              </button>
-              <button className="btn btn-ghost" onClick={handleReset}>
-                <RotateCcw size={14} />
-                Start over
-              </button>
+      <div className="container">
+        <div className="pick-wrap">
+          <div className="results-head">
+            <div className="mono-label">rolling the dice…</div>
+            <h2>Finding you <span className="gold">something</span></h2>
+          </div>
+          <div className="reel spinning">
+            <div className="reel-card">
+              <CoverArt game={reelGame} />
+              <div className="reel-name">{reelGame.name}</div>
             </div>
           </div>
         </div>
@@ -72,82 +137,138 @@ export default function Picker() {
     )
   }
 
-  if (results) {
+  /* RESULTS */
+  if (phase === 'results' && results) {
+    const hero = results[0]
+    const runners = results.slice(1)
     return (
-      <div className="picker-page">
-        <div className="container picker-container">
-          <div className="results-header">
-            <Trophy size={28} style={{ color: 'var(--accent)' }} />
-            <h2>Your picks</h2>
-            <p>Based on your answers, here are your top 3:</p>
+      <div className="container">
+        <div className="results">
+          <div className="results-head fade-up">
+            <div className="mono-label">{randomMode ? 'f*** around → found out' : 'your top picks'}</div>
+            <h2>{randomMode ? <>Go play <span className="gold">this</span>.</> : <>Tonight, play <span className="gold">these</span>.</>}</h2>
           </div>
 
-          <div className="results-grid">
-            {results.map((game, i) => (
-              <div key={game.appid} className="result-item">
-                <GameCard game={game} rank={i + 1} />
-                <p className="result-reason">{game.reason}</p>
+          <div className="hero-pick fade-up">
+            <div className="hp-art"><CoverArt game={hero.game} /></div>
+            <div className="hp-body">
+              <span className="hp-rank">
+                {randomMode ? <><IconShuffle style={{ width: 15, height: 15 }} /> random pick</> : <><IconStar style={{ width: 15, height: 15 }} /> #1 pick</>}
+              </span>
+              <div className="hp-name">{hero.game.name}</div>
+              <div className="hp-meta">
+                <Badge kind="muted">{hero.game.genre}</Badge>
+                <Badge kind="accent" icon={({ style }) => <span style={style}>⏱</span>}>{fmtHours(hero.game.hours)} played</Badge>
+                {hero.game.installed
+                  ? <Badge kind="pickle" icon={IconCheck}>Installed</Badge>
+                  : <Badge kind="muted">Not installed</Badge>}
               </div>
-            ))}
+              <div className="hp-reason">
+                {randomMode
+                  ? <em>{hero.reason}</em>
+                  : <span className="hl">{hero.reason.charAt(0).toUpperCase() + hero.reason.slice(1)}.</span>}
+              </div>
+              <div className="hp-actions">
+                <button className="btn btn-primary btn-lg">
+                  <IconZap style={{ width: 17, height: 17 }} />
+                  {hero.game.installed ? 'Launch game' : 'Install & play'}
+                </button>
+                {randomMode
+                  ? <button className="btn btn-pickle btn-lg" onClick={fafo}><IconShuffle style={{ width: 17, height: 17 }} /> Roll again</button>
+                  : <button className="btn btn-outline btn-lg" onClick={restart}>Retake quiz</button>}
+              </div>
+            </div>
           </div>
 
-          <div className="result-actions">
-            <button className="btn btn-pickle btn-lg" onClick={handleRandom}>
-              <Shuffle size={16} />
-              F*** around & find out
+          {!randomMode && runners.length > 0 && (
+            <div className="runners fade-up">
+              {runners.map((r, i) => (
+                <div key={r.game.id} className="runner">
+                  <div className="r-art" style={{ background: r.game.coverBg }}>
+                    <span style={{ position: 'absolute', bottom: -8, right: -2, fontSize: 42, fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.1)' }}>{r.game.mark}</span>
+                  </div>
+                  <div className="r-body">
+                    <div className="r-rank">#{i + 2} pick</div>
+                    <div className="r-name">{r.game.name}</div>
+                    <div className="r-reason">{r.reason.charAt(0).toUpperCase() + r.reason.slice(1)}.</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="results-foot fade-up">
+            <button className="btn btn-ghost" onClick={() => navigate('/library')}>
+              <IconLibrary style={{ width: 17, height: 17 }} /> Back to library
             </button>
-            <button className="btn btn-ghost" onClick={handleReset}>
-              <RotateCcw size={14} />
-              Try again
-            </button>
+            {!randomMode && (
+              <button className="btn btn-outline" onClick={fafo}>
+                <IconShuffle style={{ width: 17, height: 17 }} /> Or just pick randomly
+              </button>
+            )}
           </div>
         </div>
       </div>
     )
   }
+
+  /* QUIZ */
+  const cur = QUIZ[step]
+  const pct = (step / QUIZ.length) * 100
 
   return (
-    <div className="picker-page">
-      <div className="container picker-container">
-        <div className="picker-progress-wrap">
-          <div className="picker-progress-bar">
-            <div className="picker-progress-fill" style={{ width: `${progress}%` }} />
+    <div className="container">
+      <div className="pick-wrap">
+        <div className="pick-progress">
+          <div className="fill" style={{ width: pct + '%' }} />
+        </div>
+        <div className="pick-step-meta">
+          {step > 0
+            ? <a className="back" onClick={() => setStep(step - 1)} style={{ cursor: 'pointer' }}>
+                <IconArrowLeft style={{ width: 15, height: 15 }} /> Back
+              </a>
+            : <a className="back" onClick={() => navigate('/library')} style={{ cursor: 'pointer' }}>
+                <IconArrowLeft style={{ width: 15, height: 15 }} /> Library
+              </a>}
+          <span>Question {step + 1} / {QUIZ.length}</span>
+        </div>
+
+        <div className="fade-up" key={step}>
+          <h2 className="pick-q">{cur.q}</h2>
+          <p className="pick-q-sub">{cur.sub}</p>
+          <div className="pick-options">
+            {cur.options.map(o => (
+              <button
+                key={o.v}
+                className={`pick-opt${answers[cur.id] === o.v ? ' sel' : ''}`}
+                onClick={() => choose(cur.id, o.v)}
+              >
+                <div className="o-main">
+                  <div className="o-label">{o.label}</div>
+                  <div className="o-sub">{o.sub}</div>
+                </div>
+                <span className="o-arrow"><IconChevron style={{ width: 20, height: 20 }} /></span>
+              </button>
+            ))}
           </div>
-          <span className="picker-progress-label">{step + 1} / {questions.length}</span>
         </div>
 
-        <div className="picker-question">
-          <div className="question-emoji">{currentQ.emoji}</div>
-          <h2 className="question-text">{currentQ.question}</h2>
-        </div>
-
-        <div className="picker-options">
-          {currentQ.options.map(opt => (
-            <button
-              key={opt.value}
-              className="picker-option"
-              onClick={() => handleAnswer(opt.value)}
-            >
-              <div className="option-content">
-                <span className="option-label">{opt.label}</span>
-                <span className="option-sub">{opt.sub}</span>
+        {step === 0 && (
+          <>
+            <div className="fafo-or">
+              <div className="rule" /> can't be bothered? <div className="rule" />
+            </div>
+            <div className="fafo">
+              <div className="fafo-panel">
+                <h3>F*** around &amp; find out</h3>
+                <p>Skip the questions. We'll grab a random game from your library and you go play it. No thinking required.</p>
+                <button className="fafo-btn" onClick={fafo}>
+                  <IconShuffle style={{ width: 22, height: 22 }} /> Surprise me
+                </button>
               </div>
-              <ChevronRight size={18} className="option-arrow" />
-            </button>
-          ))}
-        </div>
-
-        <div className="picker-footer">
-          <button className="btn btn-pickle" onClick={handleRandom}>
-            <Shuffle size={15} />
-            F*** around & find out
-          </button>
-          {step > 0 && (
-            <button className="btn btn-ghost btn-sm" onClick={() => setStep(step - 1)}>
-              Back
-            </button>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

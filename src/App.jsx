@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import './App.css'
+import PickleField from './components/PickleField'
 import Navbar from './components/Navbar'
 import Landing from './pages/Landing'
 import Library from './pages/Library'
@@ -41,11 +42,10 @@ function AuthedRoute({ user, loading, children }) {
   if (loading) {
     return (
       <div style={{ display: 'grid', placeItems: 'center', minHeight: '60vh' }}>
-        <div className="spinner" />
+        <div className="spin" style={{ width: 32, height: 32, border: '3px solid var(--ink)', borderTopColor: 'var(--pickle)', borderRadius: '50%', animation: 'gp-spin 0.6s linear infinite' }} />
       </div>
     )
   }
-  // Skip auth gate when Supabase isn't configured (local dev without .env)
   if (!SUPABASE_CONFIGURED) return children
   if (!user) return <Navigate to="/" replace />
   return children
@@ -61,51 +61,54 @@ export default function App() {
   }
 
   const withNav = (Component, props = {}) => (
-    <div className="app">
+    <div className="gp-app">
       <Navbar user={user} onSignOut={handleSignOut} />
-      <div className="page">
+      <div className="gp-main">
         <Component user={user} {...props} />
       </div>
     </div>
   )
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <div className="app">
-            <div className="page">
-              <Landing user={user} />
+    <>
+      <PickleField />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <div className="gp-app">
+              <div className="gp-main">
+                <Landing user={user} />
+              </div>
             </div>
-          </div>
-        }
-      />
-      <Route
-        path="/library"
-        element={
-          <AuthedRoute user={user} loading={loading}>
-            {withNav(Library)}
-          </AuthedRoute>
-        }
-      />
-      <Route
-        path="/pick"
-        element={
-          <AuthedRoute user={user} loading={loading}>
-            {withNav(Picker)}
-          </AuthedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <AuthedRoute user={user} loading={loading}>
-            {withNav(Settings)}
-          </AuthedRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+          }
+        />
+        <Route
+          path="/library"
+          element={
+            <AuthedRoute user={user} loading={loading}>
+              {withNav(Library)}
+            </AuthedRoute>
+          }
+        />
+        <Route
+          path="/pick"
+          element={
+            <AuthedRoute user={user} loading={loading}>
+              {withNav(Picker)}
+            </AuthedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <AuthedRoute user={user} loading={loading}>
+              {withNav(Settings)}
+            </AuthedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   )
 }
