@@ -31,7 +31,10 @@ if (!$player) {
     json_out(['error' => 'Steam account not found or profile is set to private.'], 400);
 }
 
-// Save to user record
+// Clear any existing game data for this user so old and new libraries don't mix
+db()->prepare('DELETE FROM steam_games WHERE user_id = ?')->execute([$user['id']]);
+
+// Save new Steam account to user record
 db()->prepare(
     'UPDATE users SET steam_id=?, steam_name=?, steam_avatar=? WHERE id=?'
 )->execute([$steamId, $player['personaname'], $player['avatarfull'] ?? null, $user['id']]);

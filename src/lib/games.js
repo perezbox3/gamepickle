@@ -102,33 +102,65 @@ export const QUIZ = [
   },
 ]
 
+// Maps quiz genre answers to Steam Store genre strings
+const GENRE_MAP = {
+  RPG:      ['RPG', 'Role-Playing'],
+  Shooter:  ['Action', 'Shooter', 'Arcade'],
+  Strategy: ['Strategy', 'Tower Defense'],
+}
+
 export function scoreGame(g, ans) {
   let s = 0
   const reasons = []
-  if (ans.mood && g.session === ans.mood) s += 3
-  if (ans.time && g.session === ans.time) {
-    s += 2
-    reasons.push(`fits your ${ans.time === 'fast' ? 'quick' : ans.time === 'long' ? 'all-evening' : 'session'} window`)
+
+  // Session/mood — only mock games have these fields
+  if (g.session) {
+    if (ans.mood && g.session === ans.mood) s += 3
+    if (ans.time && g.session === ans.time) {
+      s += 2
+      reasons.push(`fits your ${ans.time === 'fast' ? 'quick' : ans.time === 'long' ? 'all-evening' : 'session'} window`)
+    }
   }
-  if (ans.play) {
+
+  // Play mode — mock games use g.play, real games use g.is_multiplayer
+  if (g.play !== undefined) {
     if (g.play === ans.play) {
       s += 3
       reasons.push(ans.play === 'multi' ? 'great with friends' : ans.play === 'solo' ? 'a solid solo sink' : 'plays solo or co-op')
     } else if (g.play === 'both' || ans.play === 'both') {
       s += 1
     }
-  }
-  if (ans.genre && ans.genre !== 'any') {
-    if (g.genre === ans.genre) {
-      s += 4
-      reasons.push(`it's the ${g.genre} you asked for`)
+  } else if (g.is_multiplayer !== undefined) {
+    const gamePlay = g.is_multiplayer ? 'multi' : 'solo'
+    if (gamePlay === ans.play) {
+      s += 3
+      reasons.push(ans.play === 'multi' ? 'great with friends' : 'a solid solo experience')
+    } else if (ans.play === 'both') {
+      s += 1
     }
   }
-  if (ans.effort === 'high' && ['Strategy', 'RPG', 'Fighting'].includes(g.genre)) s += 2
-  if (ans.effort === 'low' && ['Sandbox', 'Simulation', 'Puzzle', 'Platformer'].includes(g.genre)) s += 2
+
+  // Genre — quiz answers match mock genres directly; real games use GENRE_MAP
+  if (ans.genre && ans.genre !== 'any' && g.genre) {
+    const matches = GENRE_MAP[ans.genre] || [ans.genre]
+    if (matches.some(m => g.genre.includes(m))) {
+      s += 4
+      reasons.push(`it's the ${ans.genre} you asked for`)
+    }
+  }
+
+  // Effort — works for both mock and real game genres
+  if (ans.effort === 'high' && g.genre && ['Strategy', 'RPG', 'Fighting', 'Role-Playing', 'Tower Defense'].some(x => g.genre.includes(x))) s += 2
+  if (ans.effort === 'low'  && g.genre && ['Casual', 'Puzzle', 'Simulation', 'Sandbox', 'Platformer', 'Racing'].some(x => g.genre.includes(x))) s += 2
+
   s += Math.min(g.hours / 120, 2.2)
   if (g.installed) { s += 1.2; reasons.push('already installed') }
-  if (g.hours > 120) reasons.push(`you've sunk ${Math.round(g.hours)}h into it`)
+  if (g.recent) reasons.push('on your recent playlist')
+  else if (g.hours > 120) reasons.push(`you've sunk ${Math.round(g.hours)}h into it`)
   else if (g.hours < 15) reasons.push('barely touched — time to give it a shot')
-  return { score: s, reason: reasons.slice(0, 2).join(' · ') || (g.genre ? `a ${g.genre.toLowerCase()} pick from your shelf` : 'a pick from your shelf') }
+
+  return {
+    score: s,
+    reason: reasons.slice(0, 2).join(' · ') || (g.genre ? `a ${g.genre.toLowerCase()} pick from your shelf` : 'a pick from your shelf'),
+  }
 }

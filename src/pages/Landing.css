@@ -60,6 +60,36 @@
 .feature h3 { margin: 0 0 8px; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
 .feature p  { margin: 0; color: var(--ink-soft); font-size: 14px; font-weight: 500; line-height: 1.6; }
 
+.anon-section { margin-top: 36px; width: 100%; max-width: 520px; margin-left: auto; margin-right: auto; }
+.anon-divider {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--font-mono); font-size: 16px; color: var(--ink-soft);
+  margin-bottom: 18px;
+}
+.anon-divider .rule { flex: 1; height: 2px; background: var(--ink-soft); opacity: 0.3; }
+.anon-form { display: flex; gap: 8px; }
+.anon-input {
+  flex: 1; padding: 12px 14px; border: var(--bd-thick); border-radius: 8px;
+  background: var(--card); font-family: var(--font-ui); font-size: 15px;
+  color: var(--ink); outline: none;
+}
+.anon-input:focus { border-color: var(--pickle); box-shadow: 3px 3px 0 var(--pickle); }
+.anon-btn { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.anon-note {
+  margin-top: 10px; font-family: var(--font-mono); font-size: 14px; color: var(--ink-soft);
+  text-align: left;
+}
+.anon-resume {
+  background: none; border: none; padding: 0; color: var(--pickle-deep);
+  font-family: var(--font-mono); font-size: 14px; cursor: pointer; text-decoration: underline;
+}
+.anon-perks {
+  display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px;
+  font-family: var(--font-mono); font-size: 14px;
+}
+.perk-yes    { color: var(--pickle-deep); }
+.perk-locked { color: var(--ink-soft); }
+
 .landing-foot {
   position: relative; z-index: 1; text-align: center; padding: 24px;
   font-family: var(--font-mono); font-size: 18px; line-height: 1; color: var(--ink-soft);

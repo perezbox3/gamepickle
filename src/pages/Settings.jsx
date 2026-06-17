@@ -31,7 +31,7 @@ const sessions = [
   { v: 'chill', label: 'No clock' },
 ]
 
-export default function Settings({ user }) {
+export default function Settings({ user, refreshUser }) {
   // Steam link state — seeded from user prop so it persists across page loads
   const [steamInput, setSteamInput]   = useState('')
   const [steamLinked, setSteamLinked] = useState(!!user?.steam_id)
@@ -40,6 +40,7 @@ export default function Settings({ user }) {
   )
   const [linking, setLinking]   = useState(false)
   const [syncing, setSyncing]   = useState(false)
+  const [enriching, setEnriching] = useState(false)
   const [linkError, setLinkError] = useState('')
   const [syncMsg, setSyncMsg]   = useState('')
 
@@ -65,8 +66,8 @@ export default function Settings({ user }) {
       setSteamLinked(true)
       setSteamProfile({ name: data.steam_name, avatar: data.steam_avatar })
       setSteamInput('')
-      // Auto-sync library right after linking
-      await handleSync()
+      await refreshUser()         // refresh App.jsx user state so navbar + routes update
+      await handleSync()          // auto-sync then enrich
     } finally {
       setLinking(false)
     }
@@ -78,10 +79,24 @@ export default function Settings({ user }) {
       const res  = await fetch('/api/steam/sync.php', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) { setSyncMsg(data.error || 'Sync failed.'); return }
-      setSyncMsg(`✓ ${data.synced} games synced`)
-      setTimeout(() => setSyncMsg(''), 4000)
+      setSyncMsg(`✓ ${data.synced} games synced — enriching genres…`)
+      await handleEnrich(data.synced)
     } finally {
       setSyncing(false)
+    }
+  }
+
+  async function handleEnrich(synced) {
+    setEnriching(true)
+    try {
+      const res  = await fetch('/api/steam/enrich.php', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        setSyncMsg(`✓ ${synced ?? '?'} games synced · ${data.enriched} genres fetched`)
+      }
+      setTimeout(() => setSyncMsg(''), 6000)
+    } finally {
+      setEnriching(false)
     }
   }
 
@@ -117,8 +132,9 @@ export default function Settings({ user }) {
                 <div className="sl-sub">{steamProfile?.name || 'Steam account'}</div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-outline btn-sm" onClick={handleSync} disabled={syncing}>
-                  <IconRefresh style={{ width: 14, height: 14 }} /> {syncing ? 'Syncing…' : 'Sync'}
+                <button className="btn btn-outline btn-sm" onClick={handleSync} disabled={syncing || enriching}>
+                  <IconRefresh style={{ width: 14, height: 14 }} />
+                  {syncing ? 'Syncing…' : enriching ? 'Enriching…' : 'Sync'}
                 </button>
                 <button className="btn btn-outline btn-sm" onClick={handleUnlink}>Unlink</button>
               </div>

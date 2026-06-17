@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import GameCard, { Badge, fmtHours } from '../components/GameCard'
+import { getAnonSteamId } from '../lib/auth'
 import './Library.css'
 
 function IconSearch(p) {
@@ -58,7 +59,7 @@ function coverStyle(game) {
   return { background: game.coverBg }
 }
 
-export default function Library() {
+export default function Library({ user }) {
   const navigate = useNavigate()
   const [games, setGames]   = useState([])
   const [loading, setLoading] = useState(true)
@@ -66,8 +67,19 @@ export default function Library() {
   const [q, setQ]           = useState('')
   const [filter, setFilter] = useState('all')
 
+  const anonId = !user?.steam_id ? getAnonSteamId() : null
+  const isAnon = !user && !!anonId
+
   useEffect(() => {
-    fetch('/api/games.php')
+    const url = user?.steam_id
+      ? '/api/games.php'
+      : anonId
+        ? `/api/games.php?steam_id=${encodeURIComponent(anonId)}`
+        : null
+
+    if (!url) { setLoading(false); return }
+
+    fetch(url)
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) setGames(data)
@@ -75,7 +87,7 @@ export default function Library() {
       })
       .catch(() => setError('Could not reach server.'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [user])
 
   const sorted    = [...games].sort((a, b) => b.hours - a.hours)
   const [top1, top2, top3] = sorted
@@ -102,7 +114,7 @@ export default function Library() {
     )
   }
 
-  // No games yet — prompt to link Steam
+  // No games — different message for anonymous vs authenticated
   if (!loading && games.length === 0) {
     return (
       <div className="container">
@@ -112,9 +124,13 @@ export default function Library() {
         </div>
         <div className="empty fade-up">
           <div className="empty-emoji"><IconSteam style={{ width: 48, height: 48 }} /></div>
-          <h3>{error || 'No games synced yet'}</h3>
-          <p>Link your Steam account in Settings and sync your library to see your games here.</p>
-          <button className="btn btn-primary" onClick={() => navigate('/settings')}>Go to Settings</button>
+          <h3>{error || 'No games found'}</h3>
+          {isAnon
+            ? <p>Make sure your Steam profile is set to <strong>Public</strong> at steamcommunity.com → Edit Profile → Privacy Settings.</p>
+            : <p>Link your Steam account in Settings and sync your library to see your games here.</p>}
+          {isAnon
+            ? <button className="btn btn-outline" onClick={() => navigate('/')}>Try a different Steam ID</button>
+            : <button className="btn btn-primary" onClick={() => navigate('/settings')}>Go to Settings</button>}
         </div>
       </div>
     )
@@ -122,6 +138,14 @@ export default function Library() {
 
   return (
     <div className="container">
+      {isAnon && (
+        <div className="anon-banner">
+          Previewing a Steam library ·{' '}
+          <a href="/api/auth/login.php" className="anon-banner-link">Sign in to save permanently + unlock stats</a>
+          {' '}·{' '}
+          <button className="anon-banner-btn" onClick={() => navigate('/')}>Change Steam ID</button>
+        </div>
+      )}
       <div className="page-head">
         <div className="mono-label">~/steam/library</div>
         <h1 className="page-title">Your library</h1>

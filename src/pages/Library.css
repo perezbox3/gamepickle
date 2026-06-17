@@ -1,3 +1,15 @@
+.anon-banner {
+  background: var(--brine); border: var(--bd-thick); border-radius: var(--radius);
+  padding: 10px 16px; margin-bottom: 20px; font-family: var(--font-mono);
+  font-size: 15px; color: var(--ink); display: flex; align-items: center;
+  flex-wrap: wrap; gap: 4px;
+}
+.anon-banner-link { color: var(--pickle-deep); font-weight: 700; }
+.anon-banner-btn {
+  background: none; border: none; padding: 0; color: var(--ink-soft);
+  font-family: var(--font-mono); font-size: 15px; cursor: pointer; text-decoration: underline;
+}
+
 .lib-toolbar {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;
 }

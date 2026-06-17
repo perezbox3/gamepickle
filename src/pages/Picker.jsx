@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CoverArt, Badge, fmtHours } from '../components/GameCard'
 import { QUIZ, scoreGame } from '../lib/games'
+import { getAnonSteamId } from '../lib/auth'
 import './Picker.css'
 
 function IconChevron(p) {
@@ -39,7 +40,7 @@ function coverStyle(game) {
   return { background: game.coverBg }
 }
 
-export default function Picker() {
+export default function Picker({ user }) {
   const navigate = useNavigate()
   const [games, setGames]   = useState([])
   const [loading, setLoading] = useState(true)
@@ -51,11 +52,20 @@ export default function Picker() {
   const [reelGame, setReelGame] = useState(null)
 
   useEffect(() => {
-    fetch('/api/games.php')
+    const anonId = !user?.steam_id ? getAnonSteamId() : null
+    const url = user?.steam_id
+      ? '/api/games.php'
+      : anonId
+        ? `/api/games.php?steam_id=${encodeURIComponent(anonId)}`
+        : null
+
+    if (!url) { setLoading(false); return }
+
+    fetch(url)
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setGames(data) })
       .finally(() => setLoading(false))
-  }, [])
+  }, [user])
 
   function choose(qid, val) {
     const next = { ...answers, [qid]: val }
