@@ -35,7 +35,7 @@ export default function Navbar({ user, onSignOut }) {
     <nav className="nav">
       <div className="nav-inner">
         <Link to="/" className="nav-brand">
-          <span className="em">🥒</span> gamepickle
+          <img src="/logo-green.png" alt="gamepickle" style={{ height: 30, width: 'auto', imageRendering: 'pixelated' }} />
         </Link>
 
         <div className={`nav-links${open ? ' open' : ''}`}>

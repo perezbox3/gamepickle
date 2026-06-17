@@ -16,11 +16,9 @@
   display: flex; align-items: center; gap: 20px;
 }
 .nav-brand {
-  display: flex; align-items: center; gap: 10px; cursor: pointer;
-  font-family: var(--font-display); font-size: 13px; color: var(--paper);
-  text-shadow: 2px 2px 0 var(--pickle-deep);
+  display: flex; align-items: center; flex-shrink: 0;
 }
-.nav-brand .em { font-size: 20px; text-shadow: none; transform: rotate(-8deg); display: inline-block; }
+.nav-brand img { display: block; }
 .nav-links { display: flex; gap: 6px; margin-left: 6px; }
 .nav-link {
   display: flex; align-items: center; gap: 8px; padding: 8px 13px;

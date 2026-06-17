@@ -12,7 +12,7 @@ export function CoverArt({ game, className }) {
   if (game.cover_url) {
     return (
       <div className={`cover ${className || ''}`}>
-        <img src={game.cover_url} alt={game.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        <img src={game.cover_url} alt={game.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
       </div>
     )
   }

@@ -59,6 +59,7 @@ export default function Landing({ user }) {
     <div className="landing">
       <div className="container">
         <div className="landing-hero">
+          <img src="/logo-cream.png" alt="gamepickle" className="landing-logo" />
           <div className="landing-pill">🥒 a very silly weekend build</div>
           <h1 className="landing-h1">STOP SCROLLING.<br /><span className="gold">START PLAYING.</span></h1>
           <p className="landing-lede">
