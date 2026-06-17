@@ -36,7 +36,7 @@
 .seg button.on { background: var(--pickle); color: var(--paper); }
 
 /* hero feature row */
-.lib-hero { display: grid; grid-template-columns: 1.45fr 1fr 1fr; gap: 18px; margin-bottom: 8px; }
+.lib-hero { display: grid; grid-template-columns: 1.45fr 1fr; gap: 18px; margin-bottom: 8px; }
 @media (max-width: 880px) { .lib-hero { grid-template-columns: 1fr; } }
 
 .lib-hero-main {
