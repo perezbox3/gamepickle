@@ -130,5 +130,5 @@ export function scoreGame(g, ans) {
   if (g.installed) { s += 1.2; reasons.push('already installed') }
   if (g.hours > 120) reasons.push(`you've sunk ${Math.round(g.hours)}h into it`)
   else if (g.hours < 15) reasons.push('barely touched — time to give it a shot')
-  return { score: s, reason: reasons.slice(0, 2).join(' · ') || `a ${g.genre.toLowerCase()} pick from your shelf` }
+  return { score: s, reason: reasons.slice(0, 2).join(' · ') || (g.genre ? `a ${g.genre.toLowerCase()} pick from your shelf` : 'a pick from your shelf') }
 }

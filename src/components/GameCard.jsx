@@ -7,7 +7,15 @@ function IconClock(p) {
   )
 }
 
+// Handles both real Steam cover images and gradient fallbacks for mock data
 export function CoverArt({ game, className }) {
+  if (game.cover_url) {
+    return (
+      <div className={`cover ${className || ''}`}>
+        <img src={game.cover_url} alt={game.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+      </div>
+    )
+  }
   return (
     <div className={`cover ${className || ''}`} style={{ background: game.coverBg }}>
       <span className="cover-mark">{game.mark}</span>
@@ -33,12 +41,12 @@ export default function GameCard({ game, rank }) {
       <div className="game-card-art">
         <CoverArt game={game} />
         {rank && <span className={`rank-chip rank-${rank}`}>#{rank}</span>}
-        {game.installed && <span className="installed-dot" title="Installed" />}
+        {game.recent && <span className="installed-dot" title="Played recently" />}
       </div>
       <div className="game-card-body">
         <div className="game-card-name" title={game.name}>{game.name}</div>
         <div className="game-card-meta">
-          <span className="gc-genre">{game.genre}</span>
+          <span className="gc-genre">{game.genre || '—'}</span>
           <span className="gc-hours">
             <IconClock style={{ width: 13, height: 13 }} />
             {fmtHours(game.hours)}

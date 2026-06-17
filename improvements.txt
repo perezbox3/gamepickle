@@ -1,0 +1,15 @@
+Allow for copy/pasting your steamID for ease of access/use
+
+	- If they type it, remember it so they can quickly click there account again if they want to come back
+
+Allow for the user to also get any random game on steam. 
+
+I also like the idea of having a stats page for your steam account since we are pulling the steam API
+
+Also maybe having some super cool graphs and data regarding your steam account you wouldn't normally see as well that show games types etc or when you played and things like that. 
+
+I really want to be able to utilize the steam API since some people may not realize a lot of data you can actually receive. 
+
+A lot more information on the games shown on randomize or at least the drop down option to be able to see more data etc regarding your steam account. 
+
+Something else that could be cool is a leader board for certain games amongst friends and categories you can change to see different leaderboards that change different things. 

@@ -1,58 +1,29 @@
-import { useState, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CoverArt, Badge, fmtHours } from '../components/GameCard'
-import { GAMES, QUIZ, scoreGame } from '../lib/games'
+import { QUIZ, scoreGame } from '../lib/games'
 import './Picker.css'
 
 function IconChevron(p) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
-      <path d="m9 6 6 6-6 6"/>
-    </svg>
-  )
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m9 6 6 6-6 6"/></svg>
 }
 function IconArrowLeft(p) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
-      <path d="M19 12H5M12 19l-7-7 7-7"/>
-    </svg>
-  )
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
 }
 function IconShuffle(p) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
-      <path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
-    </svg>
-  )
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
 }
 function IconStar(p) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
-      <path d="m12 3 2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8L6.6 19.6l1-6L3.3 9.4l6-.9z"/>
-    </svg>
-  )
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m12 3 2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8L6.6 19.6l1-6L3.3 9.4l6-.9z"/></svg>
 }
 function IconZap(p) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
-      <path d="M13 2 3 14h9l-1 8 10-12h-9z"/>
-    </svg>
-  )
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>
 }
 function IconCheck(p) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" {...p}>
-      <path d="M20 6 9 17l-5-5"/>
-    </svg>
-  )
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M20 6 9 17l-5-5"/></svg>
 }
 function IconLibrary(p) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
-      <path d="M3 5h4v14H3zM10 5h4v14h-4z"/>
-      <path d="m17 5 4 13-3.7 1.3L13.5 6z"/>
-    </svg>
-  )
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3 5h4v14H3zM10 5h4v14h-4z"/><path d="m17 5 4 13-3.7 1.3L13.5 6z"/></svg>
 }
 
 const FAFO_REASONS = [
@@ -63,47 +34,58 @@ const FAFO_REASONS = [
   "the pickle has chosen. respect the pickle.",
 ]
 
+function coverStyle(game) {
+  if (game.cover_url) return { backgroundImage: `url(${game.cover_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+  return { background: game.coverBg }
+}
+
 export default function Picker() {
   const navigate = useNavigate()
-  const [phase, setPhase] = useState('quiz') // quiz | reel | results
-  const [step, setStep] = useState(0)
+  const [games, setGames]   = useState([])
+  const [loading, setLoading] = useState(true)
+  const [phase, setPhase]   = useState('quiz')
+  const [step, setStep]     = useState(0)
   const [answers, setAnswers] = useState({})
   const [results, setResults] = useState(null)
   const [randomMode, setRandomMode] = useState(false)
-  const [reelGame, setReelGame] = useState(GAMES[0])
+  const [reelGame, setReelGame] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/games.php')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setGames(data) })
+      .finally(() => setLoading(false))
+  }, [])
 
   function choose(qid, val) {
     const next = { ...answers, [qid]: val }
     setAnswers(next)
-    if (step < QUIZ.length - 1) {
-      setStep(step + 1)
-    } else {
-      computeResults(next)
-    }
+    if (step < QUIZ.length - 1) setStep(step + 1)
+    else computeResults(next)
   }
 
   function computeResults(ans) {
-    const scored = GAMES
+    const scored = games
       .map(g => ({ game: g, ...scoreGame(g, ans) }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
-    setResults(scored)
-    setRandomMode(false)
-    setPhase('results')
+    setResults(scored); setRandomMode(false); setPhase('results')
     window.scrollTo({ top: 0 })
   }
 
   function fafo() {
-    setRandomMode(true)
-    setPhase('reel')
+    if (!games.length) return
+    setRandomMode(true); setPhase('reel')
+    const first = games[Math.floor(Math.random() * games.length)]
+    setReelGame(first)
     let ticks = 0
     const total = 22 + Math.floor(Math.random() * 8)
     const iv = setInterval(() => {
       ticks++
-      setReelGame(GAMES[Math.floor(Math.random() * GAMES.length)])
+      setReelGame(games[Math.floor(Math.random() * games.length)])
       if (ticks >= total) {
         clearInterval(iv)
-        const pick = GAMES[Math.floor(Math.random() * GAMES.length)]
+        const pick   = games[Math.floor(Math.random() * games.length)]
         const reason = FAFO_REASONS[Math.floor(Math.random() * FAFO_REASONS.length)]
         setResults([{ game: pick, reason, score: 0 }])
         setReelGame(pick)
@@ -117,8 +99,30 @@ export default function Picker() {
     window.scrollTo({ top: 0 })
   }
 
+  if (loading) {
+    return (
+      <div className="container">
+        <div className="pick-wrap" style={{ textAlign: 'center', paddingTop: 60 }}>
+          <div className="mono-label">loading your library…</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!games.length) {
+    return (
+      <div className="container">
+        <div className="pick-wrap" style={{ textAlign: 'center', paddingTop: 60 }}>
+          <h2>No games yet</h2>
+          <p style={{ fontFamily: 'var(--font-ui)', marginBottom: 20 }}>Link your Steam account in Settings to use the picker.</p>
+          <button className="btn btn-primary" onClick={() => navigate('/settings')}>Go to Settings</button>
+        </div>
+      </div>
+    )
+  }
+
   /* REEL */
-  if (phase === 'reel') {
+  if (phase === 'reel' && reelGame) {
     return (
       <div className="container">
         <div className="pick-wrap">
@@ -139,7 +143,7 @@ export default function Picker() {
 
   /* RESULTS */
   if (phase === 'results' && results) {
-    const hero = results[0]
+    const hero    = results[0]
     const runners = results.slice(1)
     return (
       <div className="container">
@@ -157,11 +161,9 @@ export default function Picker() {
               </span>
               <div className="hp-name">{hero.game.name}</div>
               <div className="hp-meta">
-                <Badge kind="muted">{hero.game.genre}</Badge>
+                {hero.game.genre && <Badge kind="muted">{hero.game.genre}</Badge>}
                 <Badge kind="accent" icon={({ style }) => <span style={style}>⏱</span>}>{fmtHours(hero.game.hours)} played</Badge>
-                {hero.game.installed
-                  ? <Badge kind="pickle" icon={IconCheck}>Installed</Badge>
-                  : <Badge kind="muted">Not installed</Badge>}
+                {hero.game.recent && <Badge kind="pickle" icon={IconCheck}>Played recently</Badge>}
               </div>
               <div className="hp-reason">
                 {randomMode
@@ -170,8 +172,7 @@ export default function Picker() {
               </div>
               <div className="hp-actions">
                 <button className="btn btn-primary btn-lg">
-                  <IconZap style={{ width: 17, height: 17 }} />
-                  {hero.game.installed ? 'Launch game' : 'Install & play'}
+                  <IconZap style={{ width: 17, height: 17 }} /> Launch game
                 </button>
                 {randomMode
                   ? <button className="btn btn-pickle btn-lg" onClick={fafo}><IconShuffle style={{ width: 17, height: 17 }} /> Roll again</button>
@@ -184,8 +185,8 @@ export default function Picker() {
             <div className="runners fade-up">
               {runners.map((r, i) => (
                 <div key={r.game.id} className="runner">
-                  <div className="r-art" style={{ background: r.game.coverBg }}>
-                    <span style={{ position: 'absolute', bottom: -8, right: -2, fontSize: 42, fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.1)' }}>{r.game.mark}</span>
+                  <div className="r-art" style={coverStyle(r.game)}>
+                    {!r.game.cover_url && <span style={{ position: 'absolute', bottom: -8, right: -2, fontSize: 42, fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.1)' }}>{r.game.mark}</span>}
                   </div>
                   <div className="r-body">
                     <div className="r-rank">#{i + 2} pick</div>
@@ -219,17 +220,11 @@ export default function Picker() {
   return (
     <div className="container">
       <div className="pick-wrap">
-        <div className="pick-progress">
-          <div className="fill" style={{ width: pct + '%' }} />
-        </div>
+        <div className="pick-progress"><div className="fill" style={{ width: pct + '%' }} /></div>
         <div className="pick-step-meta">
           {step > 0
-            ? <a className="back" onClick={() => setStep(step - 1)} style={{ cursor: 'pointer' }}>
-                <IconArrowLeft style={{ width: 15, height: 15 }} /> Back
-              </a>
-            : <a className="back" onClick={() => navigate('/library')} style={{ cursor: 'pointer' }}>
-                <IconArrowLeft style={{ width: 15, height: 15 }} /> Library
-              </a>}
+            ? <a className="back" onClick={() => setStep(step - 1)} style={{ cursor: 'pointer' }}><IconArrowLeft style={{ width: 15, height: 15 }} /> Back</a>
+            : <a className="back" onClick={() => navigate('/library')} style={{ cursor: 'pointer' }}><IconArrowLeft style={{ width: 15, height: 15 }} /> Library</a>}
           <span>Question {step + 1} / {QUIZ.length}</span>
         </div>
 
@@ -238,11 +233,7 @@ export default function Picker() {
           <p className="pick-q-sub">{cur.sub}</p>
           <div className="pick-options">
             {cur.options.map(o => (
-              <button
-                key={o.v}
-                className={`pick-opt${answers[cur.id] === o.v ? ' sel' : ''}`}
-                onClick={() => choose(cur.id, o.v)}
-              >
+              <button key={o.v} className={`pick-opt${answers[cur.id] === o.v ? ' sel' : ''}`} onClick={() => choose(cur.id, o.v)}>
                 <div className="o-main">
                   <div className="o-label">{o.label}</div>
                   <div className="o-sub">{o.sub}</div>
@@ -255,16 +246,12 @@ export default function Picker() {
 
         {step === 0 && (
           <>
-            <div className="fafo-or">
-              <div className="rule" /> can't be bothered? <div className="rule" />
-            </div>
+            <div className="fafo-or"><div className="rule" /> can't be bothered? <div className="rule" /></div>
             <div className="fafo">
               <div className="fafo-panel">
                 <h3>F*** around &amp; find out</h3>
                 <p>Skip the questions. We'll grab a random game from your library and you go play it. No thinking required.</p>
-                <button className="fafo-btn" onClick={fafo}>
-                  <IconShuffle style={{ width: 22, height: 22 }} /> Surprise me
-                </button>
+                <button className="fafo-btn" onClick={fafo}><IconShuffle style={{ width: 22, height: 22 }} /> Surprise me</button>
               </div>
             </div>
           </>

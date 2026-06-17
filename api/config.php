@@ -16,6 +16,7 @@ define('DB_PASS',               getenv('DB_PASS') ?: '');
 define('GOOGLE_CLIENT_ID',      getenv('GOOGLE_CLIENT_ID') ?: '');
 define('GOOGLE_CLIENT_SECRET',  getenv('GOOGLE_CLIENT_SECRET') ?: '');
 define('APP_URL',               rtrim(getenv('APP_URL') ?: 'https://gamepickle.perezbox3.com', '/'));
+define('STEAM_API_KEY',         getenv('STEAM_API_KEY') ?: '');
 define('SESSION_LIFETIME',      30 * 24 * 60 * 60); // 30 days
 
 function db(): PDO {
@@ -38,7 +39,7 @@ function get_session_user(): ?array {
     $sid = $_COOKIE['gp_sid'] ?? '';
     if (strlen($sid) !== 64) return null;
     $stmt = db()->prepare(
-        'SELECT u.id, u.email, u.name, u.avatar
+        'SELECT u.id, u.email, u.name, u.avatar, u.steam_id, u.steam_name, u.steam_avatar
          FROM sessions s
          JOIN users u ON u.id = s.user_id
          WHERE s.id = ? AND s.expires_at > NOW()'
@@ -80,4 +81,20 @@ function http_get(string $url, string $bearer): string {
     $res = curl_exec($ch);
     curl_close($ch);
     return (string) $res;
+}
+
+// Plain GET with no auth header — used for Steam API (key is in query params)
+function curl_get(string $url): string {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10]);
+    $res = curl_exec($ch);
+    curl_close($ch);
+    return (string) $res;
+}
+
+// Build a Steam API URL with the key baked in
+function steam_url(string $endpoint, array $params = []): string {
+    $params['key'] = STEAM_API_KEY;
+    $params['format'] = 'json';
+    return 'https://api.steampowered.com/' . $endpoint . '?' . http_build_query($params);
 }
