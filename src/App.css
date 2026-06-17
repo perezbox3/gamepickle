@@ -117,6 +117,8 @@
 
 /* ---------- GameCard ---------- */
 .game-card { cursor: pointer; transition: transform .14s var(--ease); }
+/* Steam header.jpg is 460×215 — use landscape ratio instead of 1:1 square */
+.game-card .cover { aspect-ratio: 460/215; }
 .game-card:hover { transform: translateY(-3px) rotate(-1deg); }
 .game-card-art { position: relative; }
 .game-card:hover .cover { box-shadow: var(--shadow); }
@@ -146,9 +148,9 @@
 .gc-hours svg { width: 13px; height: 13px; }
 
 /* game grid */
-.game-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 24px 18px; }
-@media (max-width: 1080px) { .game-grid { grid-template-columns: repeat(4, 1fr); } }
-@media (max-width: 760px) { .game-grid { grid-template-columns: repeat(2, 1fr); gap: 22px 14px; } }
+.game-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px 16px; }
+@media (max-width: 900px)  { .game-grid { grid-template-columns: repeat(3, 1fr); gap: 18px 14px; } }
+@media (max-width: 580px)  { .game-grid { grid-template-columns: repeat(2, 1fr); gap: 14px 10px; } }
 
 /* ---------- Page header ---------- */
 .page-head { padding: 40px 0 18px; }
