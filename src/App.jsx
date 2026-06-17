@@ -7,35 +7,20 @@ import Landing from './pages/Landing'
 import Library from './pages/Library'
 import Picker from './pages/Picker'
 import Settings from './pages/Settings'
+import { getMe, logout } from './lib/auth'
 
-const SUPABASE_CONFIGURED =
-  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
+const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED === 'true'
 
 function useAuth() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!SUPABASE_CONFIGURED) {
-      setLoading(false)
-      return
-    }
-
-    import('./lib/supabase').then(({ supabase }) => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setUser(session?.user ?? null)
-        setLoading(false)
-      })
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        setUser(session?.user ?? null)
-      })
-
-      return () => subscription.unsubscribe()
-    })
+    if (!AUTH_ENABLED) { setLoading(false); return }
+    getMe().then(u => { setUser(u); setLoading(false) })
   }, [])
 
-  return { user, loading }
+  return { user, loading, setUser }
 }
 
 function AuthedRoute({ user, loading, children }) {
@@ -46,18 +31,19 @@ function AuthedRoute({ user, loading, children }) {
       </div>
     )
   }
-  if (!SUPABASE_CONFIGURED) return children
+  if (!AUTH_ENABLED) return children
   if (!user) return <Navigate to="/" replace />
   return children
 }
 
 export default function App() {
-  const { user, loading } = useAuth()
+  const { user, loading, setUser } = useAuth()
 
   async function handleSignOut() {
-    if (!SUPABASE_CONFIGURED) return
-    const { supabase } = await import('./lib/supabase')
-    await supabase.auth.signOut()
+    if (!AUTH_ENABLED) return
+    await logout()
+    setUser(null)
+    window.location.href = '/'
   }
 
   const withNav = (Component, props = {}) => (

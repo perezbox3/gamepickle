@@ -61,19 +61,13 @@ export default function Landing({ user }) {
     if (user) navigate('/library')
   }, [user, navigate])
 
-  async function handleGoogleSignIn() {
-    const configured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
-    if (!configured) {
-      // Dev shortcut: skip auth and go straight to library
+  function handleGoogleSignIn() {
+    if (import.meta.env.VITE_AUTH_ENABLED !== 'true') {
+      // Dev shortcut: no PHP server locally, go straight to library
       navigate('/library')
       return
     }
-    const { supabase } = await import('../lib/supabase')
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/library` },
-    })
-    if (error) console.error(error)
+    window.location.href = '/api/auth/login.php'
   }
 
   return (
