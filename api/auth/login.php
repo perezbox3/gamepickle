@@ -2,6 +2,7 @@
 require_once dirname(__DIR__) . '/config.php';
 
 // PHP native session just to carry the state token across the Google redirect
+session_set_cookie_params(['secure' => true, 'httponly' => true, 'samesite' => 'Lax', 'path' => '/']);
 session_start();
 $state = bin2hex(random_bytes(16));
 $_SESSION['oauth_state'] = $state;

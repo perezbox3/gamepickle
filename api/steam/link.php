@@ -20,13 +20,21 @@ if (!$player) {
     json_out(['error' => 'Steam account not found or profile is set to private.'], 400);
 }
 
-// Clear any existing game data for this user so old and new libraries don't mix
-db()->prepare('DELETE FROM steam_games WHERE user_id = ?')->execute([$user['id']]);
-
-// Save new Steam account to user record
-db()->prepare(
-    'UPDATE users SET steam_id=?, steam_name=?, steam_avatar=? WHERE id=?'
-)->execute([$steamId, $player['personaname'], $player['avatarfull'] ?? null, $user['id']]);
+// Save new Steam account to user record first, then remove old game data.
+// Order matters: if the UPDATE succeeds but the DELETE fails (or vice-versa),
+// rolling back keeps the user in a consistent state rather than losing their library.
+$db = db();
+$db->beginTransaction();
+try {
+    $db->prepare(
+        'UPDATE users SET steam_id=?, steam_name=?, steam_avatar=? WHERE id=?'
+    )->execute([$steamId, $player['personaname'], $player['avatarfull'] ?? null, $user['id']]);
+    $db->prepare('DELETE FROM steam_games WHERE user_id = ?')->execute([$user['id']]);
+    $db->commit();
+} catch (\Throwable $e) {
+    $db->rollBack();
+    json_out(['error' => 'Could not link Steam account. Please try again.'], 500);
+}
 
 json_out([
     'ok'     => true,

@@ -6,6 +6,18 @@ set_time_limit(180);
 $user = get_session_user();
 if (!$user) json_out(['error' => 'Unauthenticated'], 401);
 
+// Rate limit: 10 minutes between enrichment runs (each run can take up to 3 minutes)
+$tsRow = db()->prepare('SELECT last_enrich_at FROM users WHERE id = ?');
+$tsRow->execute([$user['id']]);
+$lastEnrich = $tsRow->fetchColumn();
+if ($lastEnrich && (time() - strtotime($lastEnrich)) < 600) {
+    $wait = 600 - (time() - strtotime($lastEnrich));
+    json_out(['error' => "Please wait {$wait} seconds before enriching again."], 429);
+}
+
+// Mark start time before the long operation so concurrent requests are also blocked
+db()->prepare('UPDATE users SET last_enrich_at = NOW() WHERE id = ?')->execute([$user['id']]);
+
 // Fetch top 50 un-enriched games by playtime
 $stmt = db()->prepare(
     'SELECT id, app_id FROM steam_games

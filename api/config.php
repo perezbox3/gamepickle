@@ -1,4 +1,17 @@
 <?php
+// Never leak stack traces, DSN, or schema details to HTTP responses in production.
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+set_exception_handler(function (\Throwable $e): never {
+    error_log('[gamepickle] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+    }
+    echo json_encode(['error' => 'An unexpected error occurred. Please try again.']);
+    exit;
+});
+
 // Load .env from project root (one level above api/)
 $_envFile = dirname(__DIR__) . '/.env';
 if (file_exists($_envFile)) {

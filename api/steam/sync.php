@@ -11,6 +11,15 @@ $steamId = $row->fetchColumn();
 
 if (!$steamId) json_out(['error' => 'No Steam account linked. Link one first in Settings.'], 400);
 
+// Rate limit: 5 minutes between syncs to prevent hammering the Steam API
+$tsRow = db()->prepare('SELECT last_sync_at FROM users WHERE id = ?');
+$tsRow->execute([$user['id']]);
+$lastSync = $tsRow->fetchColumn();
+if ($lastSync && (time() - strtotime($lastSync)) < 300) {
+    $wait = 300 - (time() - strtotime($lastSync));
+    json_out(['error' => "Please wait {$wait} seconds before syncing again."], 429);
+}
+
 // Fetch full game list from Steam
 $raw = curl_get(steam_url('IPlayerService/GetOwnedGames/v1', [
     'steamid'                  => $steamId,
@@ -58,5 +67,7 @@ try {
     $db->rollBack();
     json_out(['error' => 'Sync failed: database error. Please try again.'], 500);
 }
+
+db()->prepare('UPDATE users SET last_sync_at = NOW() WHERE id = ?')->execute([$user['id']]);
 
 json_out(['ok' => true, 'synced' => count($games)]);

@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__) . '/config.php';
 
+session_set_cookie_params(['secure' => true, 'httponly' => true, 'samesite' => 'Lax', 'path' => '/']);
 session_start();
 
 // Check for Google error response first — state may be absent on denied consent (RFC 6749 §4.1.2.1)
