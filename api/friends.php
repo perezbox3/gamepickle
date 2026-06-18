@@ -8,6 +8,9 @@ if (!$user['steam_id']) json_out(['error' => 'no_steam', 'message' => 'Link your
 // ── COMPARE mode ── ?compare=STEAM_ID ────────────────────────────────────────
 if (!empty($_GET['compare'])) {
     $friend_id = trim($_GET['compare']);
+    if (!preg_match('/^76561\d{12}$/', $friend_id)) {
+        json_out(['error' => 'invalid_id', 'message' => 'Invalid Steam ID. Please use a 17-digit SteamID64.'], 400);
+    }
 
     // User's library from DB
     $stmt = db()->prepare(

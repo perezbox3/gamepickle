@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CoverArt, Badge, fmtHours } from '../components/GameCard'
 import { QUIZ, scoreGame, pickGames, recordPick, isLikelyGame } from '../lib/games'
-import { getAnonSteamId } from '../lib/auth'
 import './Picker.css'
 
 function IconChevron(p) {
@@ -144,13 +143,7 @@ export default function Picker({ user }) {
   }, [games, bannedGenres])
 
   useEffect(() => {
-    const anonId = !user?.steam_id ? getAnonSteamId() : null
-    const url = user?.steam_id
-      ? '/api/games.php'
-      : anonId
-        ? `/api/games.php?steam_id=${encodeURIComponent(anonId)}`
-        : null
-
+    const url = user?.steam_id ? '/api/games.php' : null
     if (!url) { setLoading(false); return }
 
     fetch(url)
