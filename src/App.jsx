@@ -10,6 +10,7 @@ import Settings from './pages/Settings'
 import GameDetail from './pages/GameDetail'
 import Stats from './pages/Stats'
 import Friends from './pages/Friends'
+import Privacy from './pages/Privacy'
 import { getMe, logout } from './lib/auth'
 
 const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED === 'true'
@@ -137,6 +138,7 @@ export default function App() {
             </SteamRoute>
           }
         />
+        <Route path="/privacy" element={<Privacy />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

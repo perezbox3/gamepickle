@@ -134,6 +134,8 @@ export default function Landing({ user, onSignOut }) {
 
       <div className="landing-foot">
         <span>Find more of my projects at <a href="https://perezbox3.com" target="_blank" rel="noopener noreferrer" className="b">perezbox3.com</a></span>
+        <span style={{ margin: '0 10px', opacity: 0.4 }}>·</span>
+        <Link to="/privacy" style={{ color: 'var(--ink-soft)', fontSize: 12 }}>Privacy policy</Link>
       </div>
     </div>
   )

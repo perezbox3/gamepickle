@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { GENRES } from '../lib/games'
 import './Settings.css'
 
@@ -338,7 +339,7 @@ export default function Settings({ user, refreshUser, onSignOut }) {
           <div className="sc-head"><h3 style={{ color: 'var(--spicy)' }}>Danger zone</h3></div>
           <p className="sc-desc">
             Permanently deletes your account, all sessions, your Steam library data, and all settings.
-            This cannot be undone.
+            This cannot be undone. See our <Link to="/privacy" style={{ color: 'var(--spicy)' }}>privacy policy</Link> for details on what data we store.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 400 }}>
             <input
