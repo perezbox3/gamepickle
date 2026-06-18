@@ -59,7 +59,7 @@ export default function GameDetail({ user }) {
   const isMulti     = detail?.categories?.some(c => /multi|co.op/i.test(c)) ?? passedGame?.is_multiplayer ?? false
   const steamUrl    = detail?.steam_url   ?? `https://store.steampowered.com/app/${appId}`
 
-  const fromLabel = from === '/pick' ? 'Back to picker' : from === '/stats' ? 'Back to stats' : 'Back to library'
+  const fromLabel = from === '/pick' ? 'Back to picker' : from === '/stats' ? 'Back to stats' : from === '/friends' ? 'Back to friends' : 'Back to library'
 
   return (
     <div className="container gd-page">

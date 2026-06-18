@@ -96,7 +96,7 @@ function ComparisonView({ friend, data, onBack }) {
 
   return (
     <div className="container">
-      <button className="btn btn-outline btn-sm fr-back" onClick={onBack}>
+      <button className="btn btn-ghost btn-sm fr-back" onClick={onBack}>
         <IconArrowLeft style={{ width: 14, height: 14 }} /> Back to friends
       </button>
 

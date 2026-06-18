@@ -2,16 +2,22 @@
 
 .fr-loading {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   padding: 24px 0;
 }
 
 .fr-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 32px;
+}
+@media (max-width: 900px) {
+  .fr-grid, .fr-loading { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 580px) {
+  .fr-grid, .fr-loading { grid-template-columns: 1fr; }
 }
 
 /* Landscape card — avatar left, info middle, button right */
@@ -171,7 +177,8 @@
 
 /* ── Back button ───────────────────────────────────────────────────────────── */
 
-.fr-back { margin-bottom: 24px; }
+.fr-back { margin-top: 24px; margin-bottom: 20px; color: var(--ink-soft); }
+.fr-back:hover { color: var(--ink); }
 
 /* ── Scoreboard ────────────────────────────────────────────────────────────── */
 
@@ -423,7 +430,6 @@
   .cg-cover { width: 40px; height: 22px; }
 }
 
-@media (max-width: 480px) {
-  .fr-grid, .fr-loading { grid-template-columns: 1fr; }
+@media (max-width: 420px) {
   .cg-genre { display: none; }
 }
