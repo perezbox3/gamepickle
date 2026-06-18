@@ -24,15 +24,16 @@ function IconUsers(p) {
 function FriendCard({ friend, onCompare }) {
   return (
     <div className={`fc-card${friend.online ? ' online-card' : ''}`}>
-      <div className="fc-banner" />
       <div className="fc-avatar">
         {friend.avatar
           ? <img src={friend.avatar} alt="" />
           : <div className="fc-avatar-fallback">{friend.name[0].toUpperCase()}</div>}
         <div className={`fc-dot${friend.online ? ' online' : ''}`} />
       </div>
-      <div className="fc-name">{friend.name}</div>
-      <div className="fc-status">{friend.online ? 'Online' : 'Offline'}</div>
+      <div className="fc-info">
+        <div className="fc-name">{friend.name}</div>
+        <div className="fc-status">{friend.online ? 'Online' : 'Offline'}</div>
+      </div>
       <button className="btn btn-primary btn-sm fc-btn" onClick={() => onCompare(friend)}>
         Compare →
       </button>
