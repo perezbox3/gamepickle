@@ -107,6 +107,65 @@ export const QUIZ = [
   },
 ]
 
+// Name-pattern filter for DLC / tools / art packs / soundtracks that sneak into Steam libraries
+const NON_GAME_PATTERNS = [
+  /\bOST\b/, /soundtrack/i, /artbook/i, /art book/i,
+  /\bdlc\b/i, /supporter pack/i, /season pass/i, /crosshair/i,
+  /instruments pack/i, /\bvoice pack\b/i, /\bmusic pack\b/i,
+  /skin pack/i, /cosmetic/i, /- trailer$/i,
+]
+export function isLikelyGame(g) {
+  return !NON_GAME_PATTERNS.some(p => p.test(g.name))
+}
+
+// Recent picks tracked in localStorage so the same game doesn't keep winning
+const RECENT_KEY = 'gp_recent_picks'
+function getRecentPicks() {
+  try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]') } catch { return [] }
+}
+export function recordPick(appId) {
+  if (!appId) return
+  const prev    = getRecentPicks()
+  const updated = [String(appId), ...prev.filter(id => id !== String(appId))].slice(0, 8)
+  localStorage.setItem(RECENT_KEY, JSON.stringify(updated))
+}
+
+// Weighted random selection from the top pool — variety without ignoring scoring
+export function pickGames(games, answers, n = 3) {
+  const recent  = getRecentPicks()
+  const eligible = games.filter(isLikelyGame)
+
+  const scored = eligible.map(g => {
+    const { score, reason } = scoreGame(g, answers)
+    // Recency penalty: most-recently picked = -7.2, oldest recent pick = -0.9
+    const recentIdx = recent.indexOf(String(g.app_id || g.id))
+    const penalty   = recentIdx >= 0 ? (8 - recentIdx) * 0.9 : 0
+    return { game: g, score: score - penalty, reason }
+  })
+  scored.sort((a, b) => b.score - a.score)
+
+  // Pool of top candidates (wider = more variety, narrower = more relevance)
+  const pool      = scored.slice(0, Math.min(12, scored.length))
+  const picks     = []
+  const available = [...pool]
+
+  while (picks.length < n && available.length > 0) {
+    // Weight by score^1.5 so top games are likely but not certain
+    const weights = available.map(r => Math.max(r.score + 2, 0.5) ** 1.5)
+    const total   = weights.reduce((s, w) => s + w, 0)
+    let rand = Math.random() * total
+    let idx  = 0
+    for (let i = 0; i < weights.length; i++) {
+      rand -= weights[i]
+      if (rand <= 0) { idx = i; break }
+    }
+    picks.push(available[idx])
+    available.splice(idx, 1)
+  }
+
+  return picks
+}
+
 // Maps quiz genre answers to Steam Store genre strings
 const GENRE_MAP = {
   RPG:      ['RPG', 'Role-Playing', 'Adventure'],

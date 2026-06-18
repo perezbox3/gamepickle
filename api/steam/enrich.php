@@ -20,13 +20,13 @@ if (empty($games)) {
 }
 
 $upd = db()->prepare(
-    'UPDATE steam_games SET genre=?, metacritic=?, is_multiplayer=?, store_fetched=1 WHERE id=?'
+    'UPDATE steam_games SET genre=?, metacritic=?, is_multiplayer=?, app_type=?, store_fetched=1 WHERE id=?'
 );
 $skip = db()->prepare('UPDATE steam_games SET store_fetched=1 WHERE id=?');
 
 $enriched = 0;
 foreach ($games as $g) {
-    $url  = 'https://store.steampowered.com/api/appdetails?appids=' . $g['app_id'] . '&filters=genres,metacritic,categories';
+    $url  = 'https://store.steampowered.com/api/appdetails?appids=' . $g['app_id'] . '&filters=basic,genres,metacritic,categories';
     $resp = json_decode(curl_get($url), true);
     $data = $resp[(string) $g['app_id']]['data'] ?? null;
 
@@ -36,7 +36,8 @@ foreach ($games as $g) {
         // Category 1 = Multi-player, 9 = Co-op, 27 = Cross-Platform Multiplayer
         $cats        = array_column($data['categories'] ?? [], 'id');
         $multiplayer = (int) (array_intersect([1, 9, 27], $cats) !== []);
-        $upd->execute([$genre, $metacritic, $multiplayer, $g['id']]);
+        $app_type    = $data['type'] ?? 'game'; // game | dlc | application | tool | demo | music
+        $upd->execute([$genre, $metacritic, $multiplayer, $app_type, $g['id']]);
         $enriched++;
     } else {
         $skip->execute([$g['id']]);

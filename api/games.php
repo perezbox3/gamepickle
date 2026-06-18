@@ -54,7 +54,9 @@ if (!$user) json_out(['error' => 'Not authenticated'], 401);
 
 $stmt = db()->prepare(
     'SELECT app_id, name, playtime_mins, playtime_2weeks, genre, metacritic, is_multiplayer
-     FROM steam_games WHERE user_id = ? ORDER BY playtime_mins DESC'
+     FROM steam_games
+     WHERE user_id = ? AND (app_type IS NULL OR app_type = \'game\')
+     ORDER BY playtime_mins DESC'
 );
 $stmt->execute([$user['id']]);
 

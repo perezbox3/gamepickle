@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CoverArt, Badge, fmtHours } from '../components/GameCard'
-import { QUIZ, scoreGame } from '../lib/games'
+import { QUIZ, scoreGame, pickGames, recordPick, isLikelyGame } from '../lib/games'
 import { getAnonSteamId } from '../lib/auth'
 import './Picker.css'
 
@@ -26,6 +26,9 @@ function IconCheck(p) {
 function IconLibrary(p) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3 5h4v14H3zM10 5h4v14h-4z"/><path d="m17 5 4 13-3.7 1.3L13.5 6z"/></svg>
 }
+function IconExternalLink(p) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+}
 
 const FAFO_REASONS = [
   "the dice have spoken. no take-backs.",
@@ -33,6 +36,8 @@ const FAFO_REASONS = [
   "stop overthinking it and go play this.",
   "random number generator says: yes, this one.",
   "the pickle has chosen. respect the pickle.",
+  "fate has a sense of humour. roll with it.",
+  "your cursor hesitated. the universe did not.",
 ]
 
 function coverStyle(game) {
@@ -40,16 +45,61 @@ function coverStyle(game) {
   return { background: game.coverBg }
 }
 
+function trimDesc(text, max = 220) {
+  if (!text || text.length <= max) return text
+  return text.slice(0, max).replace(/\s\S*$/, '') + '…'
+}
+
+// Rendered below the hero pick once store data loads
+function PickDetail({ detail, loading, onViewDetail }) {
+  if (loading) {
+    return (
+      <div className="pick-detail-loading">
+        <div className="skeleton" style={{ height: 88, borderRadius: 10 }} />
+      </div>
+    )
+  }
+  if (!detail) return null
+  return (
+    <div className="pick-detail fade-up">
+      {detail.screenshots?.[0] && (
+        <img src={detail.screenshots[0]} alt="" className="pd-screenshot" />
+      )}
+      <div className="pd-body">
+        {detail.description && (
+          <p className="pd-desc">{trimDesc(detail.description)}</p>
+        )}
+        <div className="pd-meta">
+          {detail.metacritic && (
+            <span className="pd-mc">MC {detail.metacritic}</span>
+          )}
+          {detail.genres?.slice(0, 4).map(g => (
+            <span key={g} className="pd-tag">{g}</span>
+          ))}
+        </div>
+        <button className="btn btn-outline btn-sm" onClick={onViewDetail}>
+          <IconExternalLink style={{ width: 14, height: 14 }} /> Full details
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function Picker({ user }) {
   const navigate = useNavigate()
-  const [games, setGames]   = useState([])
-  const [loading, setLoading] = useState(true)
-  const [phase, setPhase]   = useState('quiz')
-  const [step, setStep]     = useState(0)
-  const [answers, setAnswers] = useState({})
-  const [results, setResults] = useState(null)
+  const [games, setGames]       = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [phase, setPhase]       = useState('quiz')
+  const [step, setStep]         = useState(0)
+  const [answers, setAnswers]   = useState({})
+  const [results, setResults]   = useState(null)
   const [randomMode, setRandomMode] = useState(false)
   const [reelGame, setReelGame] = useState(null)
+  const [detailData, setDetailData] = useState(null)  // null | 'loading' | object
+  const [detailLoading, setDetailLoading] = useState(false)
+
+  // Pre-filter non-games once after library loads
+  const eligible = useMemo(() => games.filter(isLikelyGame), [games])
 
   useEffect(() => {
     const anonId = !user?.steam_id ? getAnonSteamId() : null
@@ -67,6 +117,17 @@ export default function Picker({ user }) {
       .finally(() => setLoading(false))
   }, [user])
 
+  function fetchDetail(appId) {
+    if (!appId) return
+    setDetailData(null)
+    setDetailLoading(true)
+    fetch(`/api/game.php?app_id=${appId}`)
+      .then(r => r.json())
+      .then(d => setDetailData(d.error ? null : d))
+      .catch(() => setDetailData(null))
+      .finally(() => setDetailLoading(false))
+  }
+
   function choose(qid, val) {
     const next = { ...answers, [qid]: val }
     setAnswers(next)
@@ -75,37 +136,52 @@ export default function Picker({ user }) {
   }
 
   function computeResults(ans) {
-    const scored = games
-      .map(g => ({ game: g, ...scoreGame(g, ans) }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3)
-    setResults(scored); setRandomMode(false); setPhase('results')
+    const picks = pickGames(games, ans, 3)
+    setResults(picks)
+    setRandomMode(false)
+    setPhase('results')
     window.scrollTo({ top: 0 })
+    if (picks[0]?.game?.app_id) {
+      recordPick(picks[0].game.app_id)
+      fetchDetail(picks[0].game.app_id)
+    }
   }
 
   function fafo() {
-    if (!games.length) return
-    setRandomMode(true); setPhase('reel')
-    const first = games[Math.floor(Math.random() * games.length)]
+    if (!eligible.length) return
+    setRandomMode(true)
+    setPhase('reel')
+    setDetailData(null)
+    setDetailLoading(false)
+
+    const first = eligible[Math.floor(Math.random() * eligible.length)]
     setReelGame(first)
     let ticks = 0
     const total = 22 + Math.floor(Math.random() * 8)
     const iv = setInterval(() => {
       ticks++
-      setReelGame(games[Math.floor(Math.random() * games.length)])
+      setReelGame(eligible[Math.floor(Math.random() * eligible.length)])
       if (ticks >= total) {
         clearInterval(iv)
-        const pick   = games[Math.floor(Math.random() * games.length)]
+        const pick   = eligible[Math.floor(Math.random() * eligible.length)]
         const reason = FAFO_REASONS[Math.floor(Math.random() * FAFO_REASONS.length)]
         setResults([{ game: pick, reason, score: 0 }])
         setReelGame(pick)
-        setTimeout(() => { setPhase('results'); window.scrollTo({ top: 0 }) }, 420)
+        setTimeout(() => {
+          setPhase('results')
+          window.scrollTo({ top: 0 })
+          if (pick.app_id) {
+            recordPick(pick.app_id)
+            fetchDetail(pick.app_id)
+          }
+        }, 420)
       }
     }, 90)
   }
 
   function restart() {
-    setPhase('quiz'); setStep(0); setAnswers({}); setResults(null); setRandomMode(false)
+    setPhase('quiz'); setStep(0); setAnswers({}); setResults(null)
+    setRandomMode(false); setDetailData(null); setDetailLoading(false)
     window.scrollTo({ top: 0 })
   }
 
@@ -181,9 +257,13 @@ export default function Picker({ user }) {
                   : <span className="hl">{hero.reason.charAt(0).toUpperCase() + hero.reason.slice(1)}.</span>}
               </div>
               <div className="hp-actions">
-                <button className="btn btn-primary btn-lg">
-                  <IconZap style={{ width: 17, height: 17 }} /> Launch game
-                </button>
+                {hero.game.app_id
+                  ? <button className="btn btn-primary btn-lg" onClick={() => navigate(`/game/${hero.game.app_id}`, { state: { game: hero.game, from: '/pick' } })}>
+                      <IconZap style={{ width: 17, height: 17 }} /> Go play it
+                    </button>
+                  : <button className="btn btn-primary btn-lg">
+                      <IconZap style={{ width: 17, height: 17 }} /> Launch game
+                    </button>}
                 {randomMode
                   ? <button className="btn btn-pickle btn-lg" onClick={fafo}><IconShuffle style={{ width: 17, height: 17 }} /> Roll again</button>
                   : <button className="btn btn-outline btn-lg" onClick={restart}>Retake quiz</button>}
@@ -191,10 +271,22 @@ export default function Picker({ user }) {
             </div>
           </div>
 
+          {/* Rich store detail card */}
+          <PickDetail
+            detail={detailData}
+            loading={detailLoading}
+            onViewDetail={() => navigate(`/game/${hero.game.app_id}`, { state: { game: hero.game, from: '/pick' } })}
+          />
+
           {!randomMode && runners.length > 0 && (
             <div className="runners fade-up">
               {runners.map((r, i) => (
-                <div key={r.game.id} className="runner">
+                <div
+                  key={r.game.id}
+                  className="runner"
+                  onClick={() => r.game.app_id && navigate(`/game/${r.game.app_id}`, { state: { game: r.game, from: '/pick' } })}
+                  style={r.game.app_id ? { cursor: 'pointer' } : {}}
+                >
                   <div className="r-art" style={coverStyle(r.game)}>
                     {!r.game.cover_url && <span style={{ position: 'absolute', bottom: -8, right: -2, fontSize: 42, fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.1)' }}>{r.game.mark}</span>}
                   </div>
