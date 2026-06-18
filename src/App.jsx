@@ -9,6 +9,7 @@ import Picker from './pages/Picker'
 import Settings from './pages/Settings'
 import GameDetail from './pages/GameDetail'
 import Stats from './pages/Stats'
+import Friends from './pages/Friends'
 import { getMe, logout, getAnonSteamId, clearAnonSteamId } from './lib/auth'
 
 const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED === 'true'
@@ -118,6 +119,14 @@ export default function App() {
           element={
             <AuthedRoute user={user} loading={loading}>
               {withNav(Stats)}
+            </AuthedRoute>
+          }
+        />
+        <Route
+          path="/friends"
+          element={
+            <AuthedRoute user={user} loading={loading}>
+              {withNav(Friends)}
             </AuthedRoute>
           }
         />

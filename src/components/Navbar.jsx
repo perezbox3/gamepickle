@@ -13,6 +13,9 @@ function IconBarChart(p) {
 function IconSettings(p) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
 }
+function IconFriends(p) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+}
 function IconLogout(p) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
 }
@@ -30,6 +33,7 @@ export default function Navbar({ user, onSignOut }) {
     { to: '/library',  label: 'Library',    Icon: IconLibrary  },
     { to: '/pick',     label: 'Pick a Game', Icon: IconDice     },
     ...(user ? [{ to: '/stats',    label: 'Stats',    Icon: IconBarChart }] : []),
+    ...(user ? [{ to: '/friends',  label: 'Friends',  Icon: IconFriends  }] : []),
     ...(user ? [{ to: '/settings', label: 'Settings', Icon: IconSettings }] : []),
   ]
 
