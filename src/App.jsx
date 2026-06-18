@@ -80,8 +80,9 @@ export default function App() {
           path="/"
           element={
             <div className="gp-app">
+              {user && <Navbar user={user} onSignOut={handleSignOut} />}
               <div className="gp-main">
-                <Landing user={user} />
+                <Landing user={user} onSignOut={handleSignOut} />
               </div>
             </div>
           }

@@ -93,12 +93,22 @@
   background: var(--card); color: var(--ink); border: var(--bd-thick);
   border-radius: 10px; padding: 14px 26px; font-family: var(--font-ui);
   font-size: 16px; font-weight: 800; display: inline-flex; align-items: center;
-  gap: 12px; box-shadow: var(--shadow-sm);
+  gap: 12px; box-shadow: var(--shadow-sm); text-decoration: none;
   transition: transform .09s var(--ease), box-shadow .09s var(--ease);
   cursor: pointer;
 }
 .gbtn:hover { transform: translate(-2px,-2px); box-shadow: 5px 5px 0 var(--ink); }
 .gbtn:active { transform: translate(3px,3px); box-shadow: 0 0 0 var(--ink); }
+.gbtn-ghost {
+  background: transparent; box-shadow: none; border-color: var(--ink-soft);
+  color: var(--ink-soft);
+}
+.gbtn-ghost:hover { box-shadow: 3px 3px 0 var(--ink-soft); }
+
+.landing-auth-btns {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; flex-wrap: wrap;
+}
 
 /* ---- Feature cards ---- */
 .feature-grid {

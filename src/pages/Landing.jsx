@@ -1,5 +1,5 @@
-import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { useState } from 'react'
 import { setAnonSteamId, getAnonSteamId } from '../lib/auth'
 import './Landing.css'
 
@@ -29,13 +29,9 @@ const features = [
   { Icon: IconZap,     green: false, h: 'Make it yours',          p: "Ban genres you're not feeling, set session defaults, shelve the duds." },
 ]
 
-export default function Landing({ user }) {
+export default function Landing({ user, onSignOut }) {
   const navigate = useNavigate()
   const [input, setInput] = useState('')
-
-  useEffect(() => {
-    if (user) navigate('/library')
-  }, [user, navigate])
 
   function handleGoogleSignIn() {
     if (import.meta.env.VITE_AUTH_ENABLED !== 'true') {
@@ -45,32 +41,38 @@ export default function Landing({ user }) {
     window.location.href = '/api/auth/login.php'
   }
 
-  function handleAnonPreview(e) {
+  function handleSearch(e) {
     e.preventDefault()
     const val = input.trim()
     if (!val) return
-    setAnonSteamId(val)
-    navigate('/library')
+    if (user) {
+      // Signed-in: pass as URL param so their own library stays separate
+      navigate(`/library?steam_id=${encodeURIComponent(val)}`)
+    } else {
+      // Anonymous: store in localStorage
+      setAnonSteamId(val)
+      navigate('/library')
+    }
   }
 
-  const existingId = getAnonSteamId()
+  const existingId = !user && getAnonSteamId()
 
   return (
     <div className="landing">
       <div className="container">
         <div className="landing-hero">
 
-          {/* 1. Logo */}
+          {/* Logo */}
           <img src="/logo-cream.png" alt="gamepickle" className="landing-logo" />
 
-          {/* 2. Lede */}
+          {/* Lede */}
           <p className="landing-lede">
             You own 500 games and play the same 3. gamepickle picks your next session in 60 seconds.
           </p>
 
-          {/* 3. Steam input — hero CTA */}
+          {/* Steam search — primary CTA for everyone */}
           <div className="hero-steam">
-            <form className="hero-form" onSubmit={handleAnonPreview}>
+            <form className="hero-form" onSubmit={handleSearch}>
               <input
                 className="hero-input"
                 placeholder="Steam ID, username, or profile URL…"
@@ -79,7 +81,7 @@ export default function Landing({ user }) {
                 autoFocus
               />
               <button className="hero-btn" type="submit" disabled={!input.trim()}>
-                Browse my library <IconArrow style={{ width: 18, height: 18 }} />
+                Browse library <IconArrow style={{ width: 18, height: 18 }} />
               </button>
             </form>
             <div className="hero-hint">
@@ -89,22 +91,40 @@ export default function Landing({ user }) {
               )}
             </div>
             <div className="anon-perks">
-              <span className="perk-yes">✓ Browse library</span>
+              <span className="perk-yes">✓ Browse any library</span>
               <span className="perk-yes">✓ Use the picker</span>
-              <span className="perk-locked">★ Stats &amp; Settings need a free account</span>
+              {user
+                ? <span className="perk-yes">✓ Stats &amp; Settings unlocked</span>
+                : <span className="perk-locked">★ Stats &amp; Settings need a free account</span>}
             </div>
           </div>
 
-          {/* 4. Google sign-in — secondary */}
-          <div className="landing-signin">
-            <div className="anon-divider">
-              <div className="rule" /> or sign in to save your library <div className="rule" />
+          {/* Auth section — changes based on signed-in state */}
+          {user ? (
+            <div className="landing-signin">
+              <div className="anon-divider">
+                <div className="rule" /> signed in as {user.name} <div className="rule" />
+              </div>
+              <div className="landing-auth-btns">
+                <Link to="/library" className="gbtn">
+                  View your library
+                </Link>
+                <button className="gbtn gbtn-ghost" onClick={onSignOut}>
+                  Sign out
+                </button>
+              </div>
             </div>
-            <button className="gbtn" onClick={handleGoogleSignIn}>
-              <IconGoogle style={{ width: 21, height: 21 }} /> Continue with Google
-            </button>
-            <span className="landing-note">free · saves your library · unlocks stats &amp; settings</span>
-          </div>
+          ) : (
+            <div className="landing-signin">
+              <div className="anon-divider">
+                <div className="rule" /> or sign in to save your library <div className="rule" />
+              </div>
+              <button className="gbtn" onClick={handleGoogleSignIn}>
+                <IconGoogle style={{ width: 21, height: 21 }} /> Continue with Google
+              </button>
+              <span className="landing-note">free · saves your library · unlocks stats &amp; settings</span>
+            </div>
+          )}
 
         </div>
 

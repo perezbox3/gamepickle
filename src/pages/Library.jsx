@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import GameCard, { Badge, fmtHours } from '../components/GameCard'
 import { getAnonSteamId } from '../lib/auth'
 import './Library.css'
@@ -65,23 +65,37 @@ function coverStyle(game) {
 
 export default function Library({ user }) {
   const navigate = useNavigate()
-  const [games, setGames]   = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError]   = useState('')
-  const [q, setQ]           = useState('')
-  const [filter, setFilter] = useState('all')
+  const [searchParams] = useSearchParams()
 
-  const anonId = !user?.steam_id ? getAnonSteamId() : null
-  const isAnon = !user && !!anonId
+  // URL param (signed-in user browsing another account) takes priority over localStorage
+  const paramSteamId = searchParams.get('steam_id')
+  const anonId       = !user ? getAnonSteamId() : null
+  // browseId is the external Steam ID being viewed (either signed-in browse or anon)
+  const browseId     = paramSteamId || anonId
+  const isAnon       = !user && !!anonId       // not signed in, using localStorage
+  const isBrowsing   = !!paramSteamId && !!user // signed-in user browsing another account
+
+  const [games, setGames]     = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState('')
+  const [q, setQ]             = useState('')
+  const [filter, setFilter]   = useState('all')
 
   useEffect(() => {
-    const url = user?.steam_id
-      ? '/api/games.php'
-      : anonId
-        ? `/api/games.php?steam_id=${encodeURIComponent(anonId)}`
+    const url = browseId
+      ? `/api/games.php?steam_id=${encodeURIComponent(browseId)}`
+      : user?.steam_id
+        ? '/api/games.php'
         : null
 
+    // Reset display state whenever the target changes
+    setGames([])
+    setError('')
+    setQ('')
+    setFilter('all')
+
     if (!url) { setLoading(false); return }
+    setLoading(true)
 
     fetch(url)
       .then(r => r.json())
@@ -91,7 +105,7 @@ export default function Library({ user }) {
       })
       .catch(() => setError('Could not reach server.'))
       .finally(() => setLoading(false))
-  }, [user])
+  }, [user, browseId])
 
   const sorted    = [...games].sort((a, b) => b.hours - a.hours)
   const [top1, top2, top3] = sorted
@@ -129,10 +143,10 @@ export default function Library({ user }) {
         <div className="empty fade-up">
           <div className="empty-emoji"><IconSteam style={{ width: 48, height: 48 }} /></div>
           <h3>{error || 'No games found'}</h3>
-          {isAnon
-            ? <p>Make sure your Steam profile is set to <strong>Public</strong> at steamcommunity.com → Edit Profile → Privacy Settings.</p>
+          {(isAnon || isBrowsing)
+            ? <p>Make sure that Steam profile is set to <strong>Public</strong> at steamcommunity.com → Edit Profile → Privacy Settings.</p>
             : <p>Link your Steam account in Settings and sync your library to see your games here.</p>}
-          {isAnon
+          {(isAnon || isBrowsing)
             ? <button className="btn btn-outline" onClick={() => navigate('/')}>Try a different Steam ID</button>
             : <button className="btn btn-primary" onClick={() => navigate('/settings')}>Go to Settings</button>}
         </div>
@@ -142,6 +156,14 @@ export default function Library({ user }) {
 
   return (
     <div className="container">
+      {isBrowsing && (
+        <div className="anon-banner">
+          Browsing another Steam library ·{' '}
+          <button className="anon-banner-btn" onClick={() => navigate('/library')}>View your library</button>
+          {' '}·{' '}
+          <button className="anon-banner-btn" onClick={() => navigate('/')}>Search another</button>
+        </div>
+      )}
       {isAnon && (
         <div className="anon-banner">
           Previewing a Steam library ·{' '}
