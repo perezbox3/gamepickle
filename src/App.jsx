@@ -10,7 +10,7 @@ import Settings from './pages/Settings'
 import GameDetail from './pages/GameDetail'
 import Stats from './pages/Stats'
 import Friends from './pages/Friends'
-import { getMe, logout, getAnonSteamId, clearAnonSteamId } from './lib/auth'
+import { getMe, logout } from './lib/auth'
 
 const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED === 'true'
 
@@ -42,11 +42,11 @@ function AuthedRoute({ user, loading, children }) {
   return children
 }
 
-// Accessible when logged in OR when an anonymous Steam ID is stored
+// Accessible when logged in (Steam routes require auth now that anon browse is removed)
 function SteamRoute({ user, loading, children }) {
   if (loading) return <LoadingSpinner />
   if (!AUTH_ENABLED) return children
-  if (user || getAnonSteamId()) return children
+  if (user) return children
   return <Navigate to="/" replace />
 }
 
@@ -61,7 +61,6 @@ export default function App() {
   async function handleSignOut() {
     if (!AUTH_ENABLED) return
     await logout()
-    clearAnonSteamId()
     setUser(null)
     window.location.href = '/'
   }
@@ -110,7 +109,7 @@ export default function App() {
           path="/settings"
           element={
             <AuthedRoute user={user} loading={loading}>
-              {withNav(Settings, { refreshUser })}
+              {withNav(Settings, { refreshUser, onSignOut: handleSignOut })}
             </AuthedRoute>
           }
         />
