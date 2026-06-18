@@ -34,13 +34,13 @@ if ($user) {
 }
 
 // Filter pool:
-// - exclude games the user owns
-// - require a genre string (DLC / tools rarely have one)
-// - require some average playtime (weeds out dead content)
+// - exclude games the user already owns
+// - require non-zero CCU (at least someone is playing it right now)
+// The genre/type check happens via Steam Store API on the picked game (with retries),
+// so we don't need a genre filter here — SteamSpy's all endpoint doesn't return genres.
 $pool = array_values(array_filter($spy_data, fn($g) =>
-    !empty($g['genre']) &&
     !in_array((int) $g['appid'], $owned, true) &&
-    (int) ($g['average_forever'] ?? 0) > 30
+    (int) ($g['ccu'] ?? 0) > 0
 ));
 
 if (empty($pool)) {

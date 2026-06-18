@@ -51,7 +51,7 @@
 }
 .fafo-btn:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 rgba(0,0,0,0.35); }
 .fafo-btn:active { transform: translate(3px,3px); box-shadow: 0 0 0 rgba(0,0,0,0.35); }
-.fafo-btn-global { background: var(--ink); color: var(--paper); }
+.fafo-btn-global { background: #1b2838; color: #c7d5e0; border-color: #1b2838; }
 .fafo-btn-global:hover { box-shadow: 7px 7px 0 rgba(0,0,0,0.5); }
 .fafo-error {
   margin-top: 14px; font-family: var(--font-mono); font-size: 15px;
