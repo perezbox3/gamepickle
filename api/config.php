@@ -3,7 +3,14 @@
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 set_exception_handler(function (\Throwable $e): never {
-    error_log('[gamepickle] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    $logDir = dirname(__DIR__) . '/logs';
+    if (!is_dir($logDir)) @mkdir($logDir, 0750);
+    @error_log(
+        date('Y-m-d H:i:s') . ' [gamepickle] ' . $e->getMessage()
+        . ' in ' . $e->getFile() . ':' . $e->getLine() . PHP_EOL,
+        3,
+        $logDir . '/error.log'
+    );
     if (!headers_sent()) {
         http_response_code(500);
         header('Content-Type: application/json');
@@ -48,9 +55,15 @@ function json_out(mixed $data, int $code = 200): never {
 }
 
 // Returns user row from DB if session cookie is valid, or null.
+// Opportunistically prunes expired sessions (~1% of calls) to keep the table bounded.
 function get_session_user(): ?array {
     $sid = $_COOKIE['gp_sid'] ?? '';
     if (strlen($sid) !== 64) return null;
+
+    if (random_int(0, 99) === 0) {
+        db()->exec('DELETE FROM sessions WHERE expires_at < NOW()');
+    }
+
     $stmt = db()->prepare(
         'SELECT u.id, u.email, u.name, u.avatar, u.steam_id, u.steam_name, u.steam_avatar
          FROM sessions s

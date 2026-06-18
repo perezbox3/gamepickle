@@ -331,7 +331,7 @@ export default function Stats({ user }) {
           label="Hours logged"
           sub={`${stats.recent_hours}h last 2 weeks`}
         />
-        <StatCard value={stats.played_games} label="Games played" sub={`${Math.round(stats.played_games / stats.total_games * 100)}% of library`} color="var(--pickle-deep)" />
+        <StatCard value={stats.played_games} label="Games played" sub={`${stats.total_games > 0 ? Math.round(stats.played_games / stats.total_games * 100) : 0}% of library`} color="var(--pickle-deep)" />
         <StatCard value={stats.avg_hours + 'h'} label="Avg per game" sub="for games you've played" />
       </div>
 
