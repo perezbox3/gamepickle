@@ -116,7 +116,7 @@ function ScatterPlot({ data, onDotClick }) {
       <div className="scatter-title">Metacritic score vs. hours played</div>
       <div className="scatter-sub">Each dot is a game you've played. Higher right = critically good AND you loved it.</div>
       <div style={{ overflowX: 'auto' }}>
-        <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', minWidth: 320, maxWidth: W, display: 'block' }}>
+        <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', minWidth: 320, display: 'block' }}>
           {/* Grid lines */}
           {xTicks.map(x => (
             <line key={x} x1={toX(x)} y1={PAD.top} x2={toX(x)} y2={PAD.top + IH}
