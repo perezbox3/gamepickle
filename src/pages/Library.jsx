@@ -76,6 +76,7 @@ export default function Library({ user }) {
   const isBrowsing   = !!paramSteamId && !!user // signed-in user browsing another account
 
   const [games, setGames]     = useState([])
+  const [profile, setProfile] = useState(null) // browsed account info (name + avatar)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState('')
   const [q, setQ]             = useState('')
@@ -88,8 +89,9 @@ export default function Library({ user }) {
         ? '/api/games.php'
         : null
 
-    // Reset display state whenever the target changes
+    // Reset everything when the target account changes
     setGames([])
+    setProfile(null)
     setError('')
     setQ('')
     setFilter('all')
@@ -100,8 +102,16 @@ export default function Library({ user }) {
     fetch(url)
       .then(r => r.json())
       .then(data => {
-        if (Array.isArray(data)) setGames(data)
-        else setError(data.error || 'Failed to load library.')
+        if (Array.isArray(data)) {
+          // Own library (authenticated, no steam_id param)
+          setGames(data)
+        } else if (data.games) {
+          // Browsed library — includes profile info
+          setGames(data.games)
+          setProfile(data.profile || null)
+        } else {
+          setError(data.error || 'Failed to load library.')
+        }
       })
       .catch(() => setError('Could not reach server.'))
       .finally(() => setLoading(false))
@@ -121,7 +131,7 @@ export default function Library({ user }) {
       <div className="container">
         <div className="page-head">
           <div className="mono-label">~/steam/library</div>
-          <h1 className="page-title">Your library</h1>
+          <h1 className="page-title">{browseId ? 'Loading library…' : 'Your library'}</h1>
         </div>
         <div className="section-bar">
           <IconClock style={{ width: 15, height: 15, color: 'var(--pickle)' }} className="spin" />
@@ -174,7 +184,12 @@ export default function Library({ user }) {
       )}
       <div className="page-head">
         <div className="mono-label">~/steam/library</div>
-        <h1 className="page-title">Your library</h1>
+        <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {profile?.avatar && (
+            <img src={profile.avatar} alt="" style={{ width: 36, height: 36, borderRadius: 8, border: 'var(--bd)', flexShrink: 0, imageRendering: 'pixelated' }} />
+          )}
+          {profile ? `${profile.name}'s library` : 'Your library'}
+        </h1>
         <div className="page-sub">
           {games.length} games · {games.filter(g => g.recent).length} played recently · {totalHours}h logged
         </div>
