@@ -5,6 +5,7 @@
 .set-card .sc-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
 .set-card .sc-head h3 { margin: 0; font-family: var(--font-display); font-size: 15px; line-height: 1.4; }
 .set-card .sc-desc { color: var(--ink-soft); font-size: 14px; font-weight: 600; margin: 0 0 18px; }
+.sc-ban-count { color: var(--spicy); font-weight: 800; }
 
 .steam-link {
   display: flex; align-items: center; gap: 14px; padding: 16px;

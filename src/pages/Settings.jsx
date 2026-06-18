@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { GENRES } from '../lib/games'
 import './Settings.css'
 
@@ -32,29 +32,68 @@ const sessions = [
 ]
 
 export default function Settings({ user, refreshUser }) {
-  // Steam link state — seeded from user prop so it persists across page loads
-  const [steamInput, setSteamInput]   = useState('')
-  const [steamLinked, setSteamLinked] = useState(!!user?.steam_id)
+  // Steam link state
+  const [steamInput, setSteamInput]     = useState('')
+  const [steamLinked, setSteamLinked]   = useState(!!user?.steam_id)
   const [steamProfile, setSteamProfile] = useState(
     user?.steam_id ? { name: user.steam_name, avatar: user.steam_avatar } : null
   )
-  const [previewing, setPreviewing] = useState(false)
-  const [previewData, setPreviewData] = useState(null) // { steam_id, steam_name, steam_avatar }
-  const [linking, setLinking]   = useState(false)
-  const [syncing, setSyncing]   = useState(false)
-  const [enriching, setEnriching] = useState(false)
-  const [linkError, setLinkError] = useState('')
-  const [syncMsg, setSyncMsg]   = useState('')
+  const [previewing, setPreviewing]   = useState(false)
+  const [previewData, setPreviewData] = useState(null)
+  const [linking, setLinking]         = useState(false)
+  const [syncing, setSyncing]         = useState(false)
+  const [enriching, setEnriching]     = useState(false)
+  const [linkError, setLinkError]     = useState('')
+  const [syncMsg, setSyncMsg]         = useState('')
 
-  // Other settings
+  // Picker settings — loaded from DB on mount
   const [banned, setBanned]     = useState(() => new Set())
   const [session, setSession]   = useState('mid')
-  const [hideShelved, setHideShelved]             = useState(true)
-  const [includeUninstalled, setIncludeUninstalled] = useState(true)
+  const [settingsLoading, setSettingsLoading] = useState(true)
+  const [saving, setSaving]     = useState(false)
   const [saved, setSaved]       = useState(false)
+  const [saveError, setSaveError] = useState('')
+
+  // Load settings from DB on mount
+  useEffect(() => {
+    fetch('/api/settings.php')
+      .then(r => r.json())
+      .then(data => {
+        if (data.genre_bans)      setBanned(new Set(data.genre_bans))
+        if (data.default_session) setSession(data.default_session)
+      })
+      .catch(() => {}) // non-fatal — defaults are fine
+      .finally(() => setSettingsLoading(false))
+  }, [])
 
   function toggleBan(g) {
-    setBanned(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n })
+    setBanned(prev => {
+      const n = new Set(prev)
+      n.has(g) ? n.delete(g) : n.add(g)
+      return n
+    })
+  }
+
+  async function saveSettings() {
+    setSaving(true); setSaveError(''); setSaved(false)
+    try {
+      const res = await fetch('/api/settings.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          genre_bans:      [...banned],
+          default_session: session,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) { setSaveError(data.error || 'Save failed.'); return }
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {
+      setSaveError('Could not reach server.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handlePreview() {
@@ -105,7 +144,6 @@ export default function Settings({ user, refreshUser }) {
     setEnriching(true)
     let total = 0
     try {
-      // Loop until all games are enriched (50 per request, ~40s each round)
       while (true) {
         setSyncMsg(`${synced ?? '?'} games synced · fetching genres… (${total} done)`)
         const res  = await fetch('/api/steam/enrich.php', { method: 'POST' })
@@ -114,7 +152,7 @@ export default function Settings({ user, refreshUser }) {
         total += data.enriched || 0
         if (!data.enriched) break
       }
-      const note = total < synced ? ` (${synced - total} have no store page)` : ''
+      const note = synced && total < synced ? ` (${synced - total} have no store page)` : ''
       setSyncMsg(`${synced ?? '?'} games synced · ${total} genres fetched${note}`)
       setTimeout(() => setSyncMsg(''), 10000)
     } finally {
@@ -128,8 +166,6 @@ export default function Settings({ user, refreshUser }) {
     setSteamLinked(false); setSteamProfile(null); setSyncMsg('')
   }
 
-  function save() { setSaved(true); setTimeout(() => setSaved(false), 1600) }
-
   return (
     <div className="container">
       <div className="page-head">
@@ -139,6 +175,7 @@ export default function Settings({ user, refreshUser }) {
       </div>
 
       <div className="settings">
+
         {/* Steam account */}
         <div className="card set-card">
           <div className="sc-head"><h3>Steam account</h3></div>
@@ -184,7 +221,6 @@ export default function Settings({ user, refreshUser }) {
                   </div>
                 </>
               ) : (
-                // Confirmation step — user must verify this is their account before saving
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--ink-soft)', marginBottom: 2 }}>
                     Is this your Steam account?
@@ -222,17 +258,21 @@ export default function Settings({ user, refreshUser }) {
         {/* Genre bans */}
         <div className="card set-card">
           <div className="sc-head"><h3>Excluded genres</h3></div>
-          <p className="sc-desc">Tap a genre to ban it. Banned genres never show up in picks or the FAFO button.</p>
-          <div className="genre-chips">
-            {GENRES.map(g => (
-              <button key={g} className={`gchip${banned.has(g) ? ' banned' : ''}`} onClick={() => toggleBan(g)}>
-                {g}{banned.has(g) && <span className="x"> ✕</span>}
-              </button>
-            ))}
-          </div>
-          {banned.size > 0 && (
-            <div style={{ marginTop: 14, fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--ink-soft)' }}>
-              {banned.size} genre{banned.size > 1 ? 's' : ''} hidden from picks
+          <p className="sc-desc">
+            Tap a genre to ban it. Banned genres never appear in quiz picks or the FAFO button.
+            {banned.size > 0 && <span className="sc-ban-count"> · {banned.size} banned</span>}
+          </p>
+          {settingsLoading ? (
+            <div className="genre-chips">
+              {GENRES.map(g => <div key={g} className="gchip skeleton" style={{ minWidth: 70, height: 36 }} />)}
+            </div>
+          ) : (
+            <div className="genre-chips">
+              {GENRES.map(g => (
+                <button key={g} className={`gchip${banned.has(g) ? ' banned' : ''}`} onClick={() => toggleBan(g)}>
+                  {g}{banned.has(g) && <span className="x"> ✕</span>}
+                </button>
+              ))}
             </div>
           )}
         </div>
@@ -240,40 +280,40 @@ export default function Settings({ user, refreshUser }) {
         {/* Picker defaults */}
         <div className="card set-card">
           <div className="sc-head"><h3>Picker defaults</h3></div>
-          <p className="sc-desc">Pre-fill the picker so you can get to a recommendation faster.</p>
+          <p className="sc-desc">Pre-select your usual session length so the quiz remembers your preference.</p>
           <div className="set-row">
             <div>
               <div className="sr-label">Default session length</div>
-              <div className="sr-hint">Used as the starting answer in the picker quiz.</div>
+              <div className="sr-hint">Pre-filled in the quiz — you can still change it each time.</div>
             </div>
             <div className="sessions">
               {sessions.map(s => (
-                <button key={s.v} className={session === s.v ? 'on' : ''} onClick={() => setSession(s.v)}>{s.label}</button>
+                <button key={s.v} className={session === s.v ? 'on' : ''} onClick={() => setSession(s.v)}>
+                  {s.label}
+                </button>
               ))}
             </div>
           </div>
-          <div className="set-row">
-            <div>
-              <div className="sr-label">Include uninstalled games</div>
-              <div className="sr-hint">Let picks suggest games you own but haven't downloaded.</div>
-            </div>
-            <button className={`toggle${includeUninstalled ? ' on' : ''}`} onClick={() => setIncludeUninstalled(v => !v)} aria-label="toggle include uninstalled" />
-          </div>
-          <div className="set-row">
-            <div>
-              <div className="sr-label">Hide shelved games</div>
-              <div className="sr-hint">Games you've marked "done" stay out of recommendations.</div>
-            </div>
-            <button className={`toggle${hideShelved ? ' on' : ''}`} onClick={() => setHideShelved(v => !v)} aria-label="toggle hide shelved" />
-          </div>
         </div>
 
+        {/* Save */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingBottom: 60 }}>
-          <button className="btn btn-primary" onClick={save}>
-            <IconCheck style={{ width: 17, height: 17 }} /> Save changes
+          <button className="btn btn-primary" onClick={saveSettings} disabled={saving || settingsLoading}>
+            <IconCheck style={{ width: 17, height: 17 }} />
+            {saving ? 'Saving…' : 'Save changes'}
           </button>
-          {saved && <span className="fade-up" style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--pickle-deep)' }}>✓ Saved</span>}
+          {saved && (
+            <span className="fade-up" style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--pickle-deep)' }}>
+              Settings saved
+            </span>
+          )}
+          {saveError && (
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--spicy)' }}>
+              {saveError}
+            </span>
+          )}
         </div>
+
       </div>
     </div>
   )

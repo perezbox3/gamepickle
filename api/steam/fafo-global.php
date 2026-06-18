@@ -49,14 +49,18 @@ if (empty($pool)) {
 
 // Pick a random game and verify it is actually a game via Steam Store API.
 // Retry up to 4 times if we land on DLC / tools / soundtracks.
+// Banned genres passed as comma-separated query param from the frontend
+$banned_genres = array_filter(
+    array_map('trim', explode(',', $_GET['banned'] ?? ''))
+);
+
 $pick_data = null;
 $pick_app  = null;
 $attempts  = 0;
 $tried     = [];
 
-while ($pick_data === null && $attempts < 4) {
+while ($pick_data === null && $attempts < 6) {
     $attempts++;
-    // Pick a random entry we haven't tried yet this request
     $available = array_filter($pool, fn($g) => !in_array((int) $g['appid'], $tried));
     if (empty($available)) break;
     $available = array_values($available);
@@ -69,10 +73,16 @@ while ($pick_data === null && $attempts < 4) {
     $resp = json_decode(curl_get($url), true);
     $data = $resp[(string) $app_id]['data'] ?? null;
 
-    if ($data && ($data['type'] ?? '') === 'game') {
-        $pick_data = $data;
-        $pick_app  = $app_id;
+    if (!$data || ($data['type'] ?? '') !== 'game') continue;
+
+    // Skip if any of the game's genres are in the user's ban list
+    if (!empty($banned_genres)) {
+        $game_genres = array_column($data['genres'] ?? [], 'description');
+        if (!empty(array_intersect($banned_genres, $game_genres))) continue;
     }
+
+    $pick_data = $data;
+    $pick_app  = $app_id;
 }
 
 if (!$pick_data) {

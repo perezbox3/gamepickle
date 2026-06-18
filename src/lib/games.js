@@ -131,9 +131,12 @@ export function recordPick(appId) {
 }
 
 // Weighted random selection from the top pool — variety without ignoring scoring
-export function pickGames(games, answers, n = 3) {
-  const recent  = getRecentPicks()
-  const eligible = games.filter(isLikelyGame)
+export function pickGames(games, answers, n = 3, bannedGenres = []) {
+  const recent     = getRecentPicks()
+  const bannedSet  = new Set(bannedGenres.map(g => g.toLowerCase()))
+  const eligible   = games.filter(g =>
+    isLikelyGame(g) && !(g.genre && bannedSet.has(g.genre.toLowerCase()))
+  )
 
   const scored = eligible.map(g => {
     const { score, reason } = scoreGame(g, answers)

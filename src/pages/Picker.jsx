@@ -112,7 +112,36 @@ export default function Picker({ user }) {
   const [detailLoading, setDetailLoading] = useState(false)
   const [globalError, setGlobalError]     = useState('')
 
-  const eligible = useMemo(() => games.filter(isLikelyGame), [games])
+  // Persisted settings: genre bans + default session
+  const [bannedGenres, setBannedGenres]     = useState([])
+  const [defaultSession, setDefaultSession] = useState(null)
+
+  // Load settings once on mount for authenticated users
+  useEffect(() => {
+    if (!user) return
+    fetch('/api/settings.php')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data.genre_bans)) setBannedGenres(data.genre_bans)
+        if (data.default_session)           setDefaultSession(data.default_session)
+      })
+      .catch(() => {})
+  }, [user])
+
+  // Pre-fill the time quiz answer with the saved default once settings load
+  useEffect(() => {
+    if (defaultSession && phase === 'quiz' && !answers.time) {
+      setAnswers(prev => ({ ...prev, time: defaultSession }))
+    }
+  }, [defaultSession])
+
+  // Eligible pool: non-games and banned genres removed
+  const eligible = useMemo(() => {
+    const bannedSet = new Set(bannedGenres.map(g => g.toLowerCase()))
+    return games.filter(g =>
+      isLikelyGame(g) && !(g.genre && bannedSet.has(g.genre.toLowerCase()))
+    )
+  }, [games, bannedGenres])
 
   useEffect(() => {
     const anonId = !user?.steam_id ? getAnonSteamId() : null
@@ -149,7 +178,7 @@ export default function Picker({ user }) {
   }
 
   function computeResults(ans) {
-    const picks = pickGames(games, ans, 3)
+    const picks = pickGames(games, ans, 3, bannedGenres)
     setResults(picks)
     setRandomMode(false)
     setGlobalMode(false)
@@ -200,7 +229,8 @@ export default function Picker({ user }) {
     setDetailData(null)
     setDetailLoading(false)
     try {
-      const res  = await fetch('/api/steam/fafo-global.php')
+      const banned  = bannedGenres.length ? `?banned=${encodeURIComponent(bannedGenres.join(','))}` : ''
+      const res  = await fetch(`/api/steam/fafo-global.php${banned}`)
       const data = await res.json()
       if (data.error) {
         setGlobalError(data.error)
@@ -238,9 +268,11 @@ export default function Picker({ user }) {
   }
 
   function restart() {
-    setPhase('quiz'); setStep(0); setAnswers({}); setResults(null)
+    setPhase('quiz'); setStep(0); setResults(null)
     setRandomMode(false); setGlobalMode(false)
     setDetailData(null); setDetailLoading(false); setGlobalError('')
+    // Re-apply default session when restarting quiz
+    setAnswers(defaultSession ? { time: defaultSession } : {})
     window.scrollTo({ top: 0 })
   }
 
