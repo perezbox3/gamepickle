@@ -29,6 +29,9 @@ function IconLibrary(p) {
 function IconExternalLink(p) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
 }
+function IconGlobe(p) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+}
 
 const FAFO_REASONS = [
   "the dice have spoken. no take-backs.",
@@ -38,6 +41,16 @@ const FAFO_REASONS = [
   "the pickle has chosen. respect the pickle.",
   "fate has a sense of humour. roll with it.",
   "your cursor hesitated. the universe did not.",
+]
+
+const FAFO_GLOBAL_REASONS = [
+  "you don't own this. that's just a sale away from being fixed.",
+  "50 million people have opinions about this game. now you will too.",
+  "steamspy's top 1000. the pickle reached further than usual.",
+  "the internet collectively agrees this is worth playing.",
+  "you haven't tried this. that ends today.",
+  "chosen from the most-played games on earth. no pressure.",
+  "steam has spoken. your wallet will understand.",
 ]
 
 function coverStyle(game) {
@@ -50,7 +63,6 @@ function trimDesc(text, max = 220) {
   return text.slice(0, max).replace(/\s\S*$/, '') + '…'
 }
 
-// Rendered below the hero pick once store data loads
 function PickDetail({ detail, loading, onViewDetail }) {
   if (loading) {
     return (
@@ -87,18 +99,19 @@ function PickDetail({ detail, loading, onViewDetail }) {
 
 export default function Picker({ user }) {
   const navigate = useNavigate()
-  const [games, setGames]       = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [phase, setPhase]       = useState('quiz')
-  const [step, setStep]         = useState(0)
-  const [answers, setAnswers]   = useState({})
-  const [results, setResults]   = useState(null)
+  const [games, setGames]           = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [phase, setPhase]           = useState('quiz')
+  const [step, setStep]             = useState(0)
+  const [answers, setAnswers]       = useState({})
+  const [results, setResults]       = useState(null)
   const [randomMode, setRandomMode] = useState(false)
-  const [reelGame, setReelGame] = useState(null)
-  const [detailData, setDetailData] = useState(null)  // null | 'loading' | object
+  const [globalMode, setGlobalMode] = useState(false)
+  const [reelGame, setReelGame]     = useState(null)
+  const [detailData, setDetailData] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [globalError, setGlobalError]     = useState('')
 
-  // Pre-filter non-games once after library loads
   const eligible = useMemo(() => games.filter(isLikelyGame), [games])
 
   useEffect(() => {
@@ -139,6 +152,7 @@ export default function Picker({ user }) {
     const picks = pickGames(games, ans, 3)
     setResults(picks)
     setRandomMode(false)
+    setGlobalMode(false)
     setPhase('results')
     window.scrollTo({ top: 0 })
     if (picks[0]?.game?.app_id) {
@@ -150,6 +164,7 @@ export default function Picker({ user }) {
   function fafo() {
     if (!eligible.length) return
     setRandomMode(true)
+    setGlobalMode(false)
     setPhase('reel')
     setDetailData(null)
     setDetailLoading(false)
@@ -179,9 +194,53 @@ export default function Picker({ user }) {
     }, 90)
   }
 
+  async function globalFafo() {
+    setGlobalError('')
+    setPhase('global-loading')
+    setDetailData(null)
+    setDetailLoading(false)
+    try {
+      const res  = await fetch('/api/steam/fafo-global.php')
+      const data = await res.json()
+      if (data.error) {
+        setGlobalError(data.error)
+        setPhase('quiz')
+        return
+      }
+      const game = {
+        id:             String(data.app_id),
+        app_id:         data.app_id,
+        name:           data.name,
+        cover_url:      data.cover_url,
+        genre:          data.genres?.[0] || null,
+        hours:          0,
+        recent:         false,
+        installed:      false,
+      }
+      const reason = FAFO_GLOBAL_REASONS[Math.floor(Math.random() * FAFO_GLOBAL_REASONS.length)]
+      setResults([{ game, score: 0, reason, owners: data.owners, ccu: data.ccu }])
+      setDetailData({
+        description: data.description,
+        genres:      data.genres,
+        screenshots: data.screenshots,
+        metacritic:  data.metacritic,
+        steam_url:   data.steam_url,
+      })
+      setRandomMode(true)
+      setGlobalMode(true)
+      setPhase('results')
+      window.scrollTo({ top: 0 })
+      recordPick(data.app_id)
+    } catch {
+      setGlobalError('Something went wrong. Roll again.')
+      setPhase('quiz')
+    }
+  }
+
   function restart() {
     setPhase('quiz'); setStep(0); setAnswers({}); setResults(null)
-    setRandomMode(false); setDetailData(null); setDetailLoading(false)
+    setRandomMode(false); setGlobalMode(false)
+    setDetailData(null); setDetailLoading(false); setGlobalError('')
     window.scrollTo({ top: 0 })
   }
 
@@ -195,13 +254,23 @@ export default function Picker({ user }) {
     )
   }
 
-  if (!games.length) {
+  /* GLOBAL FAFO LOADING */
+  if (phase === 'global-loading') {
     return (
       <div className="container">
-        <div className="pick-wrap" style={{ textAlign: 'center', paddingTop: 60 }}>
-          <h2>No games yet</h2>
-          <p style={{ fontFamily: 'var(--font-ui)', marginBottom: 20 }}>Link your Steam account in Settings to use the picker.</p>
-          <button className="btn btn-primary" onClick={() => navigate('/settings')}>Go to Settings</button>
+        <div className="pick-wrap">
+          <div className="results-head">
+            <div className="mono-label">reaching into all of steam…</div>
+            <h2>Finding you <span className="gold">something</span></h2>
+          </div>
+          <div className="global-loading-card">
+            <div className="gl-spinner" />
+            <div className="gl-steps">
+              <div className="gl-step">Fetching SteamSpy top 1000…</div>
+              <div className="gl-step gl-step-dim">Filtering your library…</div>
+              <div className="gl-step gl-step-dim">Picking your game…</div>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -235,50 +304,63 @@ export default function Picker({ user }) {
       <div className="container">
         <div className="results">
           <div className="results-head fade-up">
-            <div className="mono-label">{randomMode ? 'f*** around → found out' : 'your top picks'}</div>
-            <h2>{randomMode ? <>Go play <span className="gold">this</span>.</> : <>Tonight, play <span className="gold">these</span>.</>}</h2>
+            <div className="mono-label">
+              {globalMode ? '🌍 from all of steam' : randomMode ? 'f*** around → found out' : 'your top picks'}
+            </div>
+            <h2>
+              {globalMode
+                ? <>Steam says: play <span className="gold">this</span>.</>
+                : randomMode
+                  ? <>Go play <span className="gold">this</span>.</>
+                  : <>Tonight, play <span className="gold">these</span>.</>}
+            </h2>
           </div>
 
           <div className="hero-pick fade-up">
             <div className="hp-art"><CoverArt game={hero.game} /></div>
             <div className="hp-body">
               <span className="hp-rank">
-                {randomMode ? <><IconShuffle style={{ width: 15, height: 15 }} /> random pick</> : <><IconStar style={{ width: 15, height: 15 }} /> #1 pick</>}
+                {globalMode
+                  ? <><IconGlobe style={{ width: 15, height: 15 }} /> all of steam</>
+                  : randomMode
+                    ? <><IconShuffle style={{ width: 15, height: 15 }} /> random pick</>
+                    : <><IconStar style={{ width: 15, height: 15 }} /> #1 pick</>}
               </span>
               <div className="hp-name">{hero.game.name}</div>
               <div className="hp-meta">
                 {hero.game.genre && <Badge kind="muted">{hero.game.genre}</Badge>}
-                <Badge kind="accent" icon={({ style }) => <span style={style}>⏱</span>}>{fmtHours(hero.game.hours)} played</Badge>
+                {globalMode
+                  ? <Badge kind="muted"><IconGlobe style={{ width: 11, height: 11 }} /> you don't own this</Badge>
+                  : <Badge kind="accent" icon={({ style }) => <span style={style}>⏱</span>}>{fmtHours(hero.game.hours)} played</Badge>}
                 {hero.game.recent && <Badge kind="pickle" icon={IconCheck}>Played recently</Badge>}
               </div>
+              {globalMode && hero.owners && (
+                <div className="hp-owners">{hero.owners} owners on Steam</div>
+              )}
               <div className="hp-reason">
-                {randomMode
-                  ? <em>{hero.reason}</em>
-                  : <span className="hl">{hero.reason.charAt(0).toUpperCase() + hero.reason.slice(1)}.</span>}
+                <em>{hero.reason}</em>
               </div>
               <div className="hp-actions">
-                {hero.game.app_id
-                  ? <button className="btn btn-primary btn-lg" onClick={() => navigate(`/game/${hero.game.app_id}`, { state: { game: hero.game, from: '/pick' } })}>
-                      <IconZap style={{ width: 17, height: 17 }} /> Go play it
-                    </button>
-                  : <button className="btn btn-primary btn-lg">
-                      <IconZap style={{ width: 17, height: 17 }} /> Launch game
-                    </button>}
-                {randomMode
-                  ? <button className="btn btn-pickle btn-lg" onClick={fafo}><IconShuffle style={{ width: 17, height: 17 }} /> Roll again</button>
-                  : <button className="btn btn-outline btn-lg" onClick={restart}>Retake quiz</button>}
+                <button className="btn btn-primary btn-lg" onClick={() => navigate(`/game/${hero.game.app_id}`, { state: { game: hero.game, from: '/pick' } })}>
+                  <IconZap style={{ width: 17, height: 17 }} /> {globalMode ? 'Check it out' : 'Go play it'}
+                </button>
+                {globalMode
+                  ? <button className="btn btn-outline btn-lg" onClick={globalFafo}><IconGlobe style={{ width: 17, height: 17 }} /> Roll again</button>
+                  : randomMode
+                    ? <button className="btn btn-pickle btn-lg" onClick={fafo}><IconShuffle style={{ width: 17, height: 17 }} /> Roll again</button>
+                    : <button className="btn btn-outline btn-lg" onClick={restart}>Retake quiz</button>}
               </div>
             </div>
           </div>
 
-          {/* Rich store detail card */}
+          {/* Rich store detail */}
           <PickDetail
             detail={detailData}
             loading={detailLoading}
             onViewDetail={() => navigate(`/game/${hero.game.app_id}`, { state: { game: hero.game, from: '/pick' } })}
           />
 
-          {!randomMode && runners.length > 0 && (
+          {!randomMode && !globalMode && runners.length > 0 && (
             <div className="runners fade-up">
               {runners.map((r, i) => (
                 <div
@@ -304,9 +386,14 @@ export default function Picker({ user }) {
             <button className="btn btn-ghost" onClick={() => navigate('/library')}>
               <IconLibrary style={{ width: 17, height: 17 }} /> Back to library
             </button>
-            {!randomMode && (
+            {!randomMode && !globalMode && (
               <button className="btn btn-outline" onClick={fafo}>
                 <IconShuffle style={{ width: 17, height: 17 }} /> Or just pick randomly
+              </button>
+            )}
+            {!globalMode && (
+              <button className="btn btn-outline" onClick={globalFafo}>
+                <IconGlobe style={{ width: 17, height: 17 }} /> From all of Steam
               </button>
             )}
           </div>
@@ -353,7 +440,15 @@ export default function Picker({ user }) {
               <div className="fafo-panel">
                 <h3>F*** around &amp; find out</h3>
                 <p>Skip the questions. We'll grab a random game from your library and you go play it. No thinking required.</p>
-                <button className="fafo-btn" onClick={fafo}><IconShuffle style={{ width: 22, height: 22 }} /> Surprise me</button>
+                <div className="fafo-btns">
+                  <button className="fafo-btn" onClick={fafo}>
+                    <IconShuffle style={{ width: 20, height: 20 }} /> My library
+                  </button>
+                  <button className="fafo-btn fafo-btn-global" onClick={globalFafo}>
+                    <IconGlobe style={{ width: 20, height: 20 }} /> All of Steam
+                  </button>
+                </div>
+                {globalError && <div className="fafo-error">{globalError}</div>}
               </div>
             </div>
           </>
