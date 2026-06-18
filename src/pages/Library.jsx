@@ -45,10 +45,14 @@ function IconSteam(p) {
 function SkeletonCard() {
   return (
     <div className="game-card">
-      <div className="skeleton" style={{ aspectRatio: '460/215', borderRadius: '8px' }} />
+      <div className="game-card-art">
+        <div className="cover">
+          <div className="skeleton" style={{ position: 'absolute', inset: 0, borderRadius: 0 }} />
+        </div>
+      </div>
       <div className="game-card-body">
-        <div className="skeleton" style={{ height: 13, width: '80%', margin: '4px 0' }} />
-        <div className="skeleton" style={{ height: 11, width: '55%' }} />
+        <div className="skeleton" style={{ height: 13, width: '80%', margin: '4px 0', borderRadius: 4 }} />
+        <div className="skeleton" style={{ height: 11, width: '55%', borderRadius: 4 }} />
       </div>
     </div>
   )
