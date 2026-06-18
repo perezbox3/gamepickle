@@ -38,6 +38,8 @@ export default function Settings({ user, refreshUser }) {
   const [steamProfile, setSteamProfile] = useState(
     user?.steam_id ? { name: user.steam_name, avatar: user.steam_avatar } : null
   )
+  const [previewing, setPreviewing] = useState(false)
+  const [previewData, setPreviewData] = useState(null) // { steam_id, steam_name, steam_avatar }
   const [linking, setLinking]   = useState(false)
   const [syncing, setSyncing]   = useState(false)
   const [enriching, setEnriching] = useState(false)
@@ -55,19 +57,32 @@ export default function Settings({ user, refreshUser }) {
     setBanned(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n })
   }
 
-  async function handleLink() {
+  async function handlePreview() {
     if (!steamInput.trim()) return
+    setPreviewing(true); setLinkError(''); setPreviewData(null)
+    try {
+      const res  = await fetch(`/api/steam/preview.php?steam_id=${encodeURIComponent(steamInput.trim())}`)
+      const data = await res.json()
+      if (!res.ok) { setLinkError(data.error || 'Could not find that account.'); return }
+      setPreviewData(data)
+    } finally {
+      setPreviewing(false)
+    }
+  }
+
+  async function handleConfirmLink() {
+    if (!previewData) return
     setLinking(true); setLinkError('')
     try {
-      const fd = new FormData(); fd.append('steam_id', steamInput.trim())
+      const fd = new FormData(); fd.append('steam_id', previewData.steam_id)
       const res = await fetch('/api/steam/link.php', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) { setLinkError(data.error || 'Something went wrong.'); return }
       setSteamLinked(true)
       setSteamProfile({ name: data.steam_name, avatar: data.steam_avatar })
-      setSteamInput('')
-      await refreshUser()         // refresh App.jsx user state so navbar + routes update
-      await handleSync()          // auto-sync then enrich
+      setSteamInput(''); setPreviewData(null)
+      await refreshUser()
+      await handleSync()
     } finally {
       setLinking(false)
     }
@@ -141,23 +156,52 @@ export default function Settings({ user, refreshUser }) {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  className="lib-search"
-                  style={{ flex: 1, padding: '8px 12px', fontFamily: 'var(--font-ui)' }}
-                  placeholder="Steam ID, username, or profile URL…"
-                  value={steamInput}
-                  onChange={e => setSteamInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleLink()}
-                />
-                <button className="btn btn-primary btn-sm" onClick={handleLink} disabled={linking || !steamInput.trim()}>
-                  <IconSteam style={{ width: 14, height: 14 }} /> {linking ? 'Connecting…' : 'Connect'}
-                </button>
-              </div>
-              {linkError && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--spicy)' }}>{linkError}</div>}
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-soft)' }}>
-                Find your ID at <strong>steamid.io</strong> — or paste your full Steam profile URL
-              </div>
+              {!previewData ? (
+                <>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      className="lib-search"
+                      style={{ flex: 1, padding: '8px 12px', fontFamily: 'var(--font-ui)' }}
+                      placeholder="Your Steam ID, username, or profile URL…"
+                      value={steamInput}
+                      onChange={e => { setSteamInput(e.target.value); setLinkError('') }}
+                      onKeyDown={e => e.key === 'Enter' && handlePreview()}
+                    />
+                    <button className="btn btn-primary btn-sm" onClick={handlePreview} disabled={previewing || !steamInput.trim()}>
+                      <IconSteam style={{ width: 14, height: 14 }} /> {previewing ? 'Looking up…' : 'Look up →'}
+                    </button>
+                  </div>
+                  {linkError && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--spicy)' }}>{linkError}</div>}
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-soft)' }}>
+                    Find your ID at <strong>steamid.io</strong> — or paste your full Steam profile URL
+                  </div>
+                </>
+              ) : (
+                // Confirmation step — user must verify this is their account before saving
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--ink-soft)', marginBottom: 2 }}>
+                    Is this your Steam account?
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'var(--paper-2)', border: 'var(--bd-thick)', borderRadius: 8 }}>
+                    {previewData.steam_avatar && (
+                      <img src={previewData.steam_avatar} alt="" style={{ width: 44, height: 44, borderRadius: 6, border: '2px solid var(--ink)', flexShrink: 0 }} />
+                    )}
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: 16 }}>{previewData.steam_name}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-soft)' }}>{previewData.steam_id}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn btn-primary btn-sm" onClick={handleConfirmLink} disabled={linking}>
+                      <IconCheck style={{ width: 14, height: 14 }} /> {linking ? 'Linking…' : 'Yes, link this account'}
+                    </button>
+                    <button className="btn btn-outline btn-sm" onClick={() => { setPreviewData(null); setLinkError('') }} disabled={linking}>
+                      No, try again
+                    </button>
+                  </div>
+                  {linkError && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--spicy)' }}>{linkError}</div>}
+                </div>
+              )}
             </div>
           )}
 

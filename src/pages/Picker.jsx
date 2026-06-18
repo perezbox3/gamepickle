@@ -63,7 +63,7 @@ export default function Picker({ user }) {
 
     fetch(url)
       .then(r => r.json())
-      .then(data => { if (Array.isArray(data)) setGames(data) })
+      .then(data => { setGames(Array.isArray(data) ? data : (data.games || [])) })
       .finally(() => setLoading(false))
   }, [user])
 
