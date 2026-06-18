@@ -103,13 +103,19 @@ export default function Settings({ user, refreshUser }) {
 
   async function handleEnrich(synced) {
     setEnriching(true)
+    let total = 0
     try {
-      const res  = await fetch('/api/steam/enrich.php', { method: 'POST' })
-      const data = await res.json()
-      if (res.ok) {
-        setSyncMsg(`✓ ${synced ?? '?'} games synced · ${data.enriched} genres fetched`)
+      // Loop until all games are enriched (50 per request, ~40s each round)
+      while (true) {
+        setSyncMsg(`✓ ${synced ?? '?'} games synced · fetching genres… (${total} done)`)
+        const res  = await fetch('/api/steam/enrich.php', { method: 'POST' })
+        const data = await res.json()
+        if (!res.ok) break
+        total += data.enriched || 0
+        if (!data.enriched) break // no more games to enrich
       }
-      setTimeout(() => setSyncMsg(''), 6000)
+      setSyncMsg(`✓ ${synced ?? '?'} games synced · ${total} genres fetched`)
+      setTimeout(() => setSyncMsg(''), 8000)
     } finally {
       setEnriching(false)
     }

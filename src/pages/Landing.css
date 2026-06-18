@@ -135,9 +135,9 @@
 .landing-foot {
   position: relative; z-index: 1; text-align: center; padding: 24px;
   font-family: var(--font-mono); font-size: 18px; line-height: 1; color: var(--ink-soft);
-  border-top: var(--bd-thick); background: var(--pickle-bright); margin-top: auto;
+  border-top: var(--bd-thick); background: var(--pickle); margin-top: auto;
 }
-.landing-foot .b { color: var(--ink); font-weight: 700; }
+.landing-foot .b { color: var(--paper); font-weight: 700; text-decoration: underline; }
 
 /* ---- Mobile ---- */
 @media (max-width: 600px) {

@@ -6,11 +6,11 @@ set_time_limit(180);
 $user = get_session_user();
 if (!$user) json_out(['error' => 'Unauthenticated'], 401);
 
-// Fetch top 20 un-enriched games by playtime
+// Fetch top 50 un-enriched games by playtime
 $stmt = db()->prepare(
     'SELECT id, app_id FROM steam_games
      WHERE user_id = ? AND store_fetched = 0
-     ORDER BY playtime_mins DESC LIMIT 20'
+     ORDER BY playtime_mins DESC LIMIT 50'
 );
 $stmt->execute([$user['id']]);
 $games = $stmt->fetchAll();

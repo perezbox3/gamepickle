@@ -143,7 +143,7 @@ export default function Landing({ user, onSignOut }) {
       </div>
 
       <div className="landing-foot">
-        <span>🥒 <span className="b">gamepickle</span> — a tool by perezbox3</span>
+        <span>Find more of my projects at <a href="https://perezbox3.com" target="_blank" rel="noopener noreferrer" className="b">perezbox3.com</a></span>
       </div>
     </div>
   )

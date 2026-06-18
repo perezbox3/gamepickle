@@ -1,35 +1,7 @@
 import { useEffect } from 'react'
 
-const SPRITE = [
-  "...ooo...",
-  "..obhbo..",
-  ".obhbbbo.",
-  ".obbbdbo.",
-  ".obhbbbo.",
-  ".obbbdbo.",
-  ".obdbbho.",
-  ".obbbbbo.",
-  ".obhbdbo.",
-  ".obbbbbo.",
-  ".obdbbho.",
-  ".obbhbbo.",
-  "..obbbo..",
-  "..obbbo..",
-  "...ooo...",
-]
-const COLORS = { o: '#1B2A14', b: '#5FA03A', h: '#8FCB46', d: '#3C6B25' }
-
-const CELLS = (() => {
-  const cells = []
-  const H = SPRITE.length, W = SPRITE[0].length
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const c = SPRITE[y][x]
-      if (c !== '.') cells.push({ x: x - W / 2, y: y - H / 2, c: COLORS[c] })
-    }
-  }
-  return { cells, W, H }
-})()
+const SPRITE_W = 150
+const SPRITE_H = 256
 
 export default function PickleField() {
   useEffect(() => {
@@ -39,15 +11,18 @@ export default function PickleField() {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let w = 0, h = 0, dpr = 1, pickles = [], raf = 0
 
+    const img = new Image()
+    img.src = '/pickle-sprite.png'
+
     function rand(a, b) { return a + Math.random() * (b - a) }
 
     function spawn() {
       const count = Math.max(10, Math.min(26, Math.round((w * h) / 62000)))
       pickles = Array.from({ length: count }).map(() => {
-        const px = rand(2.2, 5.2)
-        const depth = (px - 2.2) / 3
+        const scale = rand(0.13, 0.32)
+        const depth = (scale - 0.13) / 0.19
         return {
-          x: rand(0, w), y: rand(0, h), px,
+          x: rand(0, w), y: rand(0, h), scale,
           vx: rand(-0.5, 0.5) * (0.5 + depth), vy: rand(-0.42, 0.42) * (0.5 + depth),
           ang: rand(0, Math.PI * 2), va: rand(-0.012, 0.012),
           bob: rand(0, Math.PI * 2), bobAmp: rand(3, 10),
@@ -67,23 +42,19 @@ export default function PickleField() {
     }
 
     function drawPickle(p, t) {
-      const { cells } = CELLS
+      const pw = SPRITE_W * p.scale
+      const ph = SPRITE_H * p.scale
       ctx.save()
       ctx.translate(p.x, p.y + Math.sin(p.bob + t * 0.0015) * p.bobAmp)
       ctx.rotate(p.ang)
       ctx.globalAlpha = p.alpha
-      const s = p.px
-      for (let i = 0; i < cells.length; i++) {
-        const c = cells[i]
-        ctx.fillStyle = c.c
-        ctx.fillRect(Math.round(c.x * s), Math.round(c.y * s), Math.ceil(s), Math.ceil(s))
-      }
+      ctx.drawImage(img, -pw / 2, -ph / 2, pw, ph)
       ctx.restore()
     }
 
     function frame(t) {
       ctx.clearRect(0, 0, w, h)
-      const m = CELLS.W * 3
+      const m = SPRITE_H * 0.35
       for (const p of pickles) {
         if (!reduce) {
           p.x += p.vx; p.y += p.vy; p.ang += p.va
@@ -95,9 +66,13 @@ export default function PickleField() {
       if (!reduce) raf = requestAnimationFrame(frame)
     }
 
-    resize()
-    window.addEventListener('resize', resize)
-    if (reduce) { frame(0) } else { raf = requestAnimationFrame(frame) }
+    function start() {
+      resize()
+      window.addEventListener('resize', resize)
+      if (reduce) { frame(0) } else { raf = requestAnimationFrame(frame) }
+    }
+
+    if (img.complete) { start() } else { img.onload = start }
 
     return () => {
       cancelAnimationFrame(raf)
