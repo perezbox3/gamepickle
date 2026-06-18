@@ -10,7 +10,7 @@
 
 .landing-hero {
   position: relative; z-index: 1;
-  text-align: center; padding: 72px 20px 44px; max-width: 740px; margin: 0 auto;
+  text-align: center; padding: 60px 20px 44px; max-width: 740px; margin: 0 auto;
 }
 
 .landing-h1 {
@@ -21,7 +21,7 @@
 
 .landing-lede {
   color: var(--ink-soft); font-size: 17px; font-weight: 600;
-  line-height: 1.65; margin: 22px auto 0; max-width: 520px;
+  line-height: 1.65; margin: 10px auto 0; max-width: 520px;
 }
 
 /* ---- Hero Steam input ---- */

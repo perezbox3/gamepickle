@@ -63,8 +63,7 @@ export default function Landing({ user }) {
           {/* 1. Logo */}
           <img src="/logo-cream.png" alt="gamepickle" className="landing-logo" />
 
-          {/* 2. Headline + lede */}
-          <h1 className="landing-h1">STOP SCROLLING.<br /><span className="gold">START PLAYING.</span></h1>
+          {/* 2. Lede */}
           <p className="landing-lede">
             You own 500 games and play the same 3. gamepickle picks your next session in 60 seconds.
           </p>
