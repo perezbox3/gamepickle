@@ -108,6 +108,71 @@
   flex-shrink: 0; white-space: nowrap;
 }
 
+/* ---- Fun facts grid ---- */
+.funfacts-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 32px;
+}
+@media (max-width: 760px) { .funfacts-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 420px) { .funfacts-grid { grid-template-columns: 1fr 1fr; } }
+
+.funfact-card { padding: 20px 18px; text-align: center; }
+.ff-emoji { font-size: 30px; margin-bottom: 10px; }
+.ff-val { font-size: 17px; font-weight: 900; line-height: 1.25; margin-bottom: 5px; }
+.ff-sub {
+  font-family: var(--font-mono); font-size: 14px; color: var(--ink-soft); line-height: 1.4;
+}
+
+/* ---- Tier chart ---- */
+.tier-chart {
+  padding: 22px 24px; margin-bottom: 32px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.tier-row { display: flex; align-items: center; gap: 12px; }
+.tier-label {
+  width: 130px; flex-shrink: 0; font-family: var(--font-mono); font-size: 16px;
+  color: var(--ink); text-align: right;
+}
+.tier-track {
+  flex: 1; height: 32px; background: var(--paper-2); border: var(--bd);
+  border-radius: 6px; overflow: hidden; position: relative; display: flex; align-items: center;
+}
+.tier-fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  transition: width .7s var(--ease);
+  opacity: 0.85;
+}
+.tier-count {
+  position: relative; z-index: 1; font-family: var(--font-mono); font-size: 14px;
+  color: var(--ink); padding: 0 8px; font-weight: 700;
+}
+.tier-pct {
+  width: 40px; flex-shrink: 0; font-family: var(--font-mono); font-size: 14px;
+  color: var(--ink-soft); text-align: right;
+}
+.tier-note {
+  font-family: var(--font-mono); font-size: 13px; color: var(--ink-soft);
+  text-align: center; margin-top: 4px;
+}
+@media (max-width: 540px) { .tier-label { width: 90px; font-size: 14px; } }
+
+/* ---- Metacritic scatter plot ---- */
+.scatter-wrap {
+  padding: 20px 20px 12px; margin-bottom: 32px;
+  position: relative;
+}
+.scatter-title { font-size: 16px; font-weight: 900; margin-bottom: 4px; }
+.scatter-sub {
+  font-family: var(--font-mono); font-size: 14px; color: var(--ink-soft); margin-bottom: 14px;
+}
+.scatter-tooltip {
+  position: fixed; pointer-events: none; z-index: 200;
+  background: var(--ink); color: var(--paper);
+  border-radius: 8px; padding: 8px 12px;
+  box-shadow: var(--shadow-lg); max-width: 220px;
+}
+.stt-name { font-weight: 800; font-size: 13px; margin-bottom: 3px; line-height: 1.3; }
+.stt-meta { font-family: var(--font-mono); font-size: 13px; opacity: 0.8; }
+
 /* Walk of shame */
 .section-desc {
   font-family: var(--font-mono); font-size: 15px; color: var(--ink-soft);

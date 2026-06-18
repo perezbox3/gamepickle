@@ -225,7 +225,7 @@ export default function Library({ user }) {
                 <h2>Most played</h2><div className="rule" />
               </div>
               <div className="lib-hero">
-                <div className="lib-hero-main" style={coverStyle(top1)} onClick={() => navigate('/pick')}>
+                <div className="lib-hero-main" style={coverStyle(top1)} onClick={() => navigate(`/game/${top1.app_id}`, { state: { game: top1, from: '/library' } })}>
                   <div className="scrim" />
                   {!top1.cover_url && <span className="mk">{top1.mark}</span>}
                   <div className="lib-hero-content">
@@ -240,7 +240,7 @@ export default function Library({ user }) {
                 </div>
                 <div className="lib-hero-side">
                   {[top2, top3].map((g, i) => (
-                    <div key={g.id} className="lib-hero-mini" onClick={() => navigate('/pick')}>
+                    <div key={g.id} className="lib-hero-mini" onClick={() => navigate(`/game/${g.app_id}`, { state: { game: g, from: '/library' } })}>
                       <div className="thumb" style={coverStyle(g)}>
                         {!g.cover_url && <span style={{ position: 'absolute', bottom: -8, right: -2, fontSize: 34, fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.1)' }}>{g.mark}</span>}
                       </div>

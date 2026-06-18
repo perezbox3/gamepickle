@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fmtHours } from '../components/GameCard'
 import './Stats.css'
@@ -53,6 +53,162 @@ function PersonaCard({ icon, label, desc }) {
   )
 }
 
+// Playtime tier pyramid chart
+function TierChart({ tiers, total }) {
+  const max = Math.max(...tiers.map(t => t.count), 1)
+  return (
+    <div className="tier-chart card">
+      {tiers.map((t, i) => {
+        const pct = max > 0 ? Math.max((t.count / max) * 100, t.count > 0 ? 4 : 0) : 0
+        const libPct = total > 0 ? Math.round((t.count / total) * 100) : 0
+        const TIER_COLORS = ['#E2622E', '#5FA03A', '#3C6B25', '#F0C23A', '#7B5EA7']
+        return (
+          <div key={t.label} className="tier-row">
+            <div className="tier-label">{t.emoji} {t.label}</div>
+            <div className="tier-track">
+              <div className="tier-fill" style={{ width: pct + '%', background: TIER_COLORS[i] }} />
+              <span className="tier-count">{t.count} games</span>
+            </div>
+            <div className="tier-pct">{libPct}%</div>
+          </div>
+        )
+      })}
+      <div className="tier-note">
+        0h · 1–5h · 5–20h · 20–100h · 100h+
+      </div>
+    </div>
+  )
+}
+
+// Metacritic vs Hours scatter plot
+function ScatterPlot({ data, onDotClick }) {
+  const svgRef = useRef(null)
+  const [tooltip, setTooltip] = useState(null)
+
+  if (!data || data.length === 0) return null
+
+  const PAD = { top: 20, right: 20, bottom: 40, left: 50 }
+  const W = 560, H = 320
+  const IW = W - PAD.left - PAD.right
+  const IH = H - PAD.top  - PAD.bottom
+
+  const maxHours = Math.max(...data.map(d => d.hours))
+  // Log scale for hours so outliers don't crush everything
+  const logMax = Math.log1p(maxHours)
+  const toX = score  => PAD.left + ((score - 40) / 60) * IW    // score range ~40-100
+  const toY = hours  => PAD.top  + IH - (Math.log1p(hours) / logMax) * IH
+  const toR = hours  => 4 + Math.min((Math.log1p(hours) / logMax) * 8, 8)
+
+  const GENRE_COLOR = {
+    'Action': '#E2622E', 'RPG': '#7B5EA7', 'Strategy': '#3C6B25',
+    'Simulation': '#5FA03A', 'Casual': '#F0C23A', 'Adventure': '#2f6d8a',
+    'Shooter': '#a8584a', 'Puzzle': '#3a8a8a', 'Racing': '#3a6da8',
+  }
+  const dotColor = g => GENRE_COLOR[g] || '#5FA03A'
+
+  // Y-axis tick labels
+  const yTicks = [0, 1, 5, 20, 100, 500].filter(v => v <= maxHours * 1.1)
+  // X-axis ticks
+  const xTicks = [40, 50, 60, 70, 80, 90, 100]
+
+  return (
+    <div className="scatter-wrap card" style={{ position: 'relative' }}>
+      <div className="scatter-title">Metacritic score vs. hours played</div>
+      <div className="scatter-sub">Each dot is a game you've played. Higher right = critically good AND you loved it.</div>
+      <div style={{ overflowX: 'auto' }}>
+        <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', minWidth: 320, maxWidth: W, display: 'block' }}>
+          {/* Grid lines */}
+          {xTicks.map(x => (
+            <line key={x} x1={toX(x)} y1={PAD.top} x2={toX(x)} y2={PAD.top + IH}
+              stroke="var(--ink)" strokeOpacity="0.08" strokeWidth="1" />
+          ))}
+          {yTicks.map(v => (
+            <line key={v} x1={PAD.left} y1={toY(v)} x2={PAD.left + IW} y2={toY(v)}
+              stroke="var(--ink)" strokeOpacity="0.08" strokeWidth="1" />
+          ))}
+
+          {/* Axes */}
+          <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + IH} stroke="var(--ink)" strokeWidth="2" />
+          <line x1={PAD.left} y1={PAD.top + IH} x2={PAD.left + IW} y2={PAD.top + IH} stroke="var(--ink)" strokeWidth="2" />
+
+          {/* X labels */}
+          {xTicks.map(x => (
+            <text key={x} x={toX(x)} y={PAD.top + IH + 16} textAnchor="middle"
+              fontSize="11" fontFamily="var(--font-mono)" fill="var(--ink-soft)">{x}</text>
+          ))}
+          <text x={PAD.left + IW / 2} y={H - 2} textAnchor="middle"
+            fontSize="11" fontFamily="var(--font-mono)" fill="var(--ink-soft)">Metacritic score</text>
+
+          {/* Y labels */}
+          {yTicks.map(v => (
+            <text key={v} x={PAD.left - 6} y={toY(v) + 4} textAnchor="end"
+              fontSize="11" fontFamily="var(--font-mono)" fill="var(--ink-soft)">{v >= 100 ? v + 'h' : v + 'h'}</text>
+          ))}
+
+          {/* Dots */}
+          {data.map((d, i) => (
+            <circle key={i}
+              cx={toX(Math.max(40, Math.min(100, d.score)))}
+              cy={toY(d.hours)}
+              r={toR(d.hours)}
+              fill={dotColor(d.genre)}
+              fillOpacity="0.78"
+              stroke="var(--ink)"
+              strokeWidth="1.2"
+              style={{ cursor: 'pointer' }}
+              onMouseEnter={e => setTooltip({ d, x: e.clientX, y: e.clientY })}
+              onMouseLeave={() => setTooltip(null)}
+              onClick={() => onDotClick(d)}
+            />
+          ))}
+        </svg>
+      </div>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div className="scatter-tooltip" style={{ left: tooltip.x + 12, top: tooltip.y - 8 }}>
+          <div className="stt-name">{tooltip.d.name}</div>
+          <div className="stt-meta">{tooltip.d.genre} · {fmtHours(tooltip.d.hours)} · MC {tooltip.d.score}</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Outrageous fun facts
+function FunFacts({ hours, games, unplayed }) {
+  if (hours < 1) return null
+  const days      = (hours / 24).toFixed(1)
+  const weeks     = (hours / 168).toFixed(1)
+  const books     = Math.floor(hours / 8)
+  const flights   = Math.floor(hours / 20)   // ~20h to fly around the world
+  const workweeks = (hours / 40).toFixed(1)
+  const sleepNights = Math.floor(hours / 8)
+  const coffees   = Math.floor(hours * 2)    // avg 2 cups per gaming session hour
+  const yearPct   = ((hours / 8760) * 100).toFixed(1)
+
+  const facts = [
+    { emoji: '😴', text: `${days} days of your life`, sub: 'in total gaming hours' },
+    { emoji: '💼', text: `${workweeks} work weeks`, sub: 'your boss would not approve' },
+    { emoji: '📚', text: `${books} books`, sub: 'you could have read instead' },
+    { emoji: '✈️', text: `${flights}× around the world`, sub: 'by flight time' },
+    { emoji: '☕', text: `~${coffees} coffees`, sub: 'consumed powering these sessions' },
+    { emoji: '📅', text: `${yearPct}% of a year`, sub: 'of your total waking life' },
+  ]
+
+  return (
+    <div className="funfacts-grid">
+      {facts.map(f => (
+        <div key={f.emoji} className="funfact-card card">
+          <div className="ff-emoji">{f.emoji}</div>
+          <div className="ff-val">{f.text}</div>
+          <div className="ff-sub">{f.sub}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function getPersonality(stats) {
   const cards = []
 
@@ -65,8 +221,7 @@ function getPersonality(stats) {
   }
 
   const backlogPct = stats.total_games > 0
-    ? Math.round((stats.unplayed / stats.total_games) * 100)
-    : 0
+    ? Math.round((stats.unplayed / stats.total_games) * 100) : 0
   if (backlogPct > 70) {
     cards.push({ icon: '📦', label: 'Backlog Hoarder', desc: `${backlogPct}% of your library is untouched. Classic Steam sale behavior.` })
   } else if (backlogPct > 40) {
@@ -96,9 +251,9 @@ function getPersonality(stats) {
 
 export default function Stats({ user }) {
   const navigate = useNavigate()
-  const [stats, setStats]   = useState(null)
+  const [stats, setStats]     = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError]   = useState('')
+  const [error, setError]     = useState('')
 
   useEffect(() => {
     fetch('/api/stats.php')
@@ -137,8 +292,8 @@ export default function Stats({ user }) {
   }
 
   const maxGenreHours = stats.genres[0]?.hours ?? 1
-  const personas = getPersonality(stats)
-  const profile  = stats.steam_profile
+  const personas      = getPersonality(stats)
+  const profile       = stats.steam_profile
 
   return (
     <div className="container stats-page">
@@ -155,9 +310,7 @@ export default function Stats({ user }) {
             <div className="account-name">{profile.name}</div>
             <div className="account-meta">
               {profile.country && <span>📍 {profile.country}</span>}
-              {profile.created && (
-                <span>Member since {new Date(profile.created * 1000).getFullYear()}</span>
-              )}
+              {profile.created && <span>Member since {new Date(profile.created * 1000).getFullYear()}</span>}
               <a href={profile.profile_url} target="_blank" rel="noopener noreferrer" className="account-link">
                 <IconSteam style={{ width: 14, height: 14 }} /> View Steam profile
               </a>
@@ -173,15 +326,25 @@ export default function Stats({ user }) {
       </div>
       <div className="stats-grid">
         <StatCard value={stats.total_games.toLocaleString()} label="Games owned" sub={`${stats.unplayed} unplayed`} />
-        <StatCard value={stats.total_hours >= 1000 ? (stats.total_hours / 1000).toFixed(1) + 'k' : stats.total_hours + 'h'} label="Hours logged" sub={`${stats.recent_hours}h last 2 weeks`} />
+        <StatCard
+          value={stats.total_hours >= 1000 ? (stats.total_hours / 1000).toFixed(1) + 'k' : stats.total_hours + 'h'}
+          label="Hours logged"
+          sub={`${stats.recent_hours}h last 2 weeks`}
+        />
         <StatCard value={stats.played_games} label="Games played" sub={`${Math.round(stats.played_games / stats.total_games * 100)}% of library`} color="var(--pickle-deep)" />
         <StatCard value={stats.avg_hours + 'h'} label="Avg per game" sub="for games you've played" />
       </div>
 
+      {/* Outrageous fun facts */}
+      <div className="section-bar">
+        <h2>Time well spent?</h2><div className="rule" />
+      </div>
+      <FunFacts hours={stats.total_hours} games={stats.total_games} unplayed={stats.unplayed} />
+
       {/* Play personality */}
       {personas.length > 0 && (
         <>
-          <div className="section-bar">
+          <div className="section-bar" style={{ marginTop: 32 }}>
             <h2>Play personality</h2><div className="rule" />
           </div>
           <div className="persona-grid">
@@ -190,10 +353,33 @@ export default function Stats({ user }) {
         </>
       )}
 
+      {/* Engagement tier chart */}
+      {stats.tiers && (
+        <>
+          <div className="section-bar">
+            <h2>How deep do you go?</h2><div className="rule" />
+          </div>
+          <TierChart tiers={stats.tiers} total={stats.total_games} />
+        </>
+      )}
+
+      {/* Metacritic scatter */}
+      {stats.scatter?.length > 2 && (
+        <>
+          <div className="section-bar" style={{ marginTop: 32 }}>
+            <h2>Do you play good games?</h2><div className="rule" />
+          </div>
+          <ScatterPlot
+            data={stats.scatter}
+            onDotClick={d => navigate(`/game/${d.app_id}`, { state: { game: { id: String(d.app_id), app_id: d.app_id, name: d.name, hours: d.hours, genre: d.genre }, from: '/stats' } })}
+          />
+        </>
+      )}
+
       {/* Genre breakdown */}
       {stats.genres.length > 0 && (
         <>
-          <div className="section-bar">
+          <div className="section-bar" style={{ marginTop: 32 }}>
             <h2>Genre breakdown</h2><div className="rule" />
           </div>
           <div className="genre-chart card">
@@ -207,13 +393,17 @@ export default function Stats({ user }) {
       {/* Top 10 most played */}
       {stats.top_games.length > 0 && (
         <>
-          <div className="section-bar">
+          <div className="section-bar" style={{ marginTop: 32 }}>
             <IconTrophy style={{ width: 15, height: 15, color: 'var(--brine)' }} />
             <h2>Most played</h2><div className="rule" />
           </div>
           <div className="top-games">
             {stats.top_games.map((g, i) => (
-              <div key={g.app_id} className="top-game-row card" onClick={() => navigate(`/game/${g.app_id}`, { state: { game: { ...g, id: String(g.app_id), hours: g.hours, hours_2w: g.hours_2w, recent: g.hours_2w > 0 }, from: '/stats' } })}>
+              <div
+                key={g.app_id}
+                className="top-game-row card"
+                onClick={() => navigate(`/game/${g.app_id}`, { state: { game: { ...g, id: String(g.app_id), recent: g.hours_2w > 0 }, from: '/stats' } })}
+              >
                 <div className="tg-rank">#{i + 1}</div>
                 <div className="tg-art">
                   <img src={g.cover_url} alt={g.name} onError={e => { e.target.style.display = 'none' }} />
@@ -231,10 +421,10 @@ export default function Stats({ user }) {
         </>
       )}
 
-      {/* Walk of shame — high rated unplayed games */}
+      {/* Walk of shame */}
       {stats.shame_list.length > 0 && (
         <>
-          <div className="section-bar">
+          <div className="section-bar" style={{ marginTop: 32 }}>
             <h2>The walk of shame</h2>
             <span className="count">{stats.shame_list.length}</span>
             <div className="rule" />
@@ -242,7 +432,11 @@ export default function Stats({ user }) {
           <p className="section-desc">Highly rated games you own but have never touched.</p>
           <div className="shame-grid">
             {stats.shame_list.map(g => (
-              <div key={g.app_id} className="shame-card card" onClick={() => navigate(`/game/${g.app_id}`, { state: { game: { ...g, id: String(g.app_id), hours: 0 }, from: '/stats' } })}>
+              <div
+                key={g.app_id}
+                className="shame-card card"
+                onClick={() => navigate(`/game/${g.app_id}`, { state: { game: { ...g, id: String(g.app_id), hours: 0 }, from: '/stats' } })}
+              >
                 <img src={g.cover_url} alt={g.name} className="shame-cover" onError={e => { e.target.style.display = 'none' }} />
                 <div className="shame-body">
                   <div className="shame-name">{g.name}</div>

@@ -50,6 +50,29 @@ $stmt = $db->prepare(
 $stmt->execute([$user['id']]);
 $shame_list = $stmt->fetchAll();
 
+// Playtime tier buckets
+$stmt = $db->prepare(
+    "SELECT
+       SUM(playtime_mins = 0)                                         AS never,
+       SUM(playtime_mins > 0   AND playtime_mins <  300)             AS dabbled,
+       SUM(playtime_mins >= 300  AND playtime_mins < 1200)           AS played,
+       SUM(playtime_mins >= 1200 AND playtime_mins < 6000)           AS into_it,
+       SUM(playtime_mins >= 6000)                                     AS obsessed
+     FROM steam_games WHERE user_id = ?"
+);
+$stmt->execute([$user['id']]);
+$tiers = $stmt->fetch();
+
+// Metacritic vs hours scatter (games with both values, limit 80 for chart perf)
+$stmt = $db->prepare(
+    'SELECT name, app_id, metacritic, playtime_mins, genre
+     FROM steam_games
+     WHERE user_id=? AND metacritic IS NOT NULL AND playtime_mins > 0
+     ORDER BY playtime_mins DESC LIMIT 80'
+);
+$stmt->execute([$user['id']]);
+$scatter_raw = $stmt->fetchAll();
+
 // Steam profile for account card
 $steam_profile = null;
 if ($user['steam_id']) {
@@ -107,4 +130,18 @@ json_out([
         'cover_url' => 'https://cdn.akamai.steamstatic.com/steam/apps/' . $g['app_id'] . '/header.jpg',
     ], $shame_list),
     'steam_profile'=> $steam_profile,
+    'tiers'        => [
+        ['label' => 'Never played',  'emoji' => '📦', 'count' => (int)$tiers['never']],
+        ['label' => 'Dabbled',       'emoji' => '👀', 'count' => (int)$tiers['dabbled']],
+        ['label' => 'Played it',     'emoji' => '🎮', 'count' => (int)$tiers['played']],
+        ['label' => 'Into it',       'emoji' => '🔥', 'count' => (int)$tiers['into_it']],
+        ['label' => 'Obsessed',      'emoji' => '💀', 'count' => (int)$tiers['obsessed']],
+    ],
+    'scatter'      => array_map(fn($g) => [
+        'name'      => $g['name'],
+        'app_id'    => (int)$g['app_id'],
+        'score'     => (int)$g['metacritic'],
+        'hours'     => round($g['playtime_mins'] / 60, 1),
+        'genre'     => $g['genre'],
+    ], $scatter_raw),
 ]);
