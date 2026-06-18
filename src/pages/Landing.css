@@ -60,21 +60,20 @@
 .hero-btn:disabled { opacity: .45; cursor: not-allowed; }
 
 .hero-hint {
-  margin-top: 11px; font-family: var(--font-ui); font-size: 13px; font-weight: 500;
-  color: var(--ink-soft); line-height: 1.6;
+  margin-top: 11px; font-family: var(--font-mono); font-size: 16px;
+  color: var(--ink-soft); line-height: 1.5;
 }
 
 .anon-perks {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 20px;
-  margin-top: 12px; font-family: var(--font-ui); font-size: 14px; font-weight: 600;
+  margin-top: 12px; font-family: var(--font-mono); font-size: 16px;
 }
 .perk-yes    { color: var(--pickle-deep); }
 .perk-locked { color: var(--ink-soft); }
 
 .anon-resume {
   background: none; border: none; padding: 0; color: var(--pickle-deep);
-  font-family: var(--font-ui); font-size: 13px; font-weight: 600;
-  cursor: pointer; text-decoration: underline;
+  font-family: var(--font-mono); font-size: 16px; cursor: pointer; text-decoration: underline;
 }
 
 /* ---- Secondary Google sign-in ---- */
@@ -84,12 +83,12 @@
 
 .anon-divider {
   display: flex; align-items: center; gap: 12px; width: 100%; max-width: 480px;
-  font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: var(--ink-soft);
+  font-family: var(--font-mono); font-size: 16px; color: var(--ink-soft);
 }
 .anon-divider .rule { flex: 1; height: 2px; background: var(--ink-soft); opacity: 0.3; }
 
 .landing-note {
-  font-family: var(--font-ui); font-size: 14px; font-weight: 500; color: var(--ink-soft);
+  font-family: var(--font-mono); font-size: 17px; line-height: 1; color: var(--ink-soft);
 }
 
 .gbtn {
