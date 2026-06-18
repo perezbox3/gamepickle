@@ -10,7 +10,9 @@
 
 .landing-hero {
   position: relative; z-index: 1;
-  text-align: center; padding: 60px 20px 44px; max-width: 740px; margin: 0 auto;
+  text-align: center; max-width: 740px; margin: 0 auto;
+  display: flex; flex-direction: column; justify-content: center;
+  min-height: min(92vh, 700px); padding: 32px 20px;
 }
 
 .landing-h1 {
@@ -58,20 +60,21 @@
 .hero-btn:disabled { opacity: .45; cursor: not-allowed; }
 
 .hero-hint {
-  margin-top: 11px; font-family: var(--font-mono); font-size: 16px;
-  color: var(--ink-soft); line-height: 1.5;
+  margin-top: 11px; font-family: var(--font-ui); font-size: 13px; font-weight: 500;
+  color: var(--ink-soft); line-height: 1.6;
 }
 
 .anon-perks {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 20px;
-  margin-top: 12px; font-family: var(--font-mono); font-size: 16px;
+  margin-top: 12px; font-family: var(--font-ui); font-size: 14px; font-weight: 600;
 }
 .perk-yes    { color: var(--pickle-deep); }
 .perk-locked { color: var(--ink-soft); }
 
 .anon-resume {
   background: none; border: none; padding: 0; color: var(--pickle-deep);
-  font-family: var(--font-mono); font-size: 16px; cursor: pointer; text-decoration: underline;
+  font-family: var(--font-ui); font-size: 13px; font-weight: 600;
+  cursor: pointer; text-decoration: underline;
 }
 
 /* ---- Secondary Google sign-in ---- */
@@ -81,12 +84,12 @@
 
 .anon-divider {
   display: flex; align-items: center; gap: 12px; width: 100%; max-width: 480px;
-  font-family: var(--font-mono); font-size: 16px; color: var(--ink-soft);
+  font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: var(--ink-soft);
 }
 .anon-divider .rule { flex: 1; height: 2px; background: var(--ink-soft); opacity: 0.3; }
 
 .landing-note {
-  font-family: var(--font-mono); font-size: 17px; line-height: 1; color: var(--ink-soft);
+  font-family: var(--font-ui); font-size: 14px; font-weight: 500; color: var(--ink-soft);
 }
 
 .gbtn {
@@ -137,7 +140,7 @@
   font-family: var(--font-mono); font-size: 18px; line-height: 1; color: var(--ink-soft);
   border-top: var(--bd-thick); background: var(--pickle); margin-top: auto;
 }
-.landing-foot .b { color: var(--paper); font-weight: 700; text-decoration: underline; }
+.landing-foot .b { color: var(--paper); font-weight: 400; text-decoration: underline; }
 
 /* ---- Mobile ---- */
 @media (max-width: 600px) {

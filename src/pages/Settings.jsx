@@ -94,7 +94,7 @@ export default function Settings({ user, refreshUser }) {
       const res  = await fetch('/api/steam/sync.php', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) { setSyncMsg(data.error || 'Sync failed.'); return }
-      setSyncMsg(`✓ ${data.synced} games synced — enriching genres…`)
+      setSyncMsg(`${data.synced} games synced — fetching genres…`)
       await handleEnrich(data.synced)
     } finally {
       setSyncing(false)
@@ -107,15 +107,16 @@ export default function Settings({ user, refreshUser }) {
     try {
       // Loop until all games are enriched (50 per request, ~40s each round)
       while (true) {
-        setSyncMsg(`✓ ${synced ?? '?'} games synced · fetching genres… (${total} done)`)
+        setSyncMsg(`${synced ?? '?'} games synced · fetching genres… (${total} done)`)
         const res  = await fetch('/api/steam/enrich.php', { method: 'POST' })
         const data = await res.json()
         if (!res.ok) break
         total += data.enriched || 0
-        if (!data.enriched) break // no more games to enrich
+        if (!data.enriched) break
       }
-      setSyncMsg(`✓ ${synced ?? '?'} games synced · ${total} genres fetched`)
-      setTimeout(() => setSyncMsg(''), 8000)
+      const note = total < synced ? ` (${synced - total} have no store page)` : ''
+      setSyncMsg(`${synced ?? '?'} games synced · ${total} genres fetched${note}`)
+      setTimeout(() => setSyncMsg(''), 10000)
     } finally {
       setEnriching(false)
     }
