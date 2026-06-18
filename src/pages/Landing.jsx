@@ -30,7 +30,7 @@ const features = [
 ]
 
 export default function Landing({ user }) {
-  const navigate   = useNavigate()
+  const navigate = useNavigate()
   const [input, setInput] = useState('')
 
   useEffect(() => {
@@ -59,51 +59,57 @@ export default function Landing({ user }) {
     <div className="landing">
       <div className="container">
         <div className="landing-hero">
+
+          {/* 1. Logo */}
           <img src="/logo-cream.png" alt="gamepickle" className="landing-logo" />
-          <div className="landing-pill">🥒 a very silly weekend build</div>
+
+          {/* 2. Headline + lede */}
           <h1 className="landing-h1">STOP SCROLLING.<br /><span className="gold">START PLAYING.</span></h1>
           <p className="landing-lede">
-            You own 500 games and play the same 3. gamepickle picks
-            your next session in 60 seconds — so you can quit the library and actually play.
+            You own 500 games and play the same 3. gamepickle picks your next session in 60 seconds.
           </p>
-          <div className="landing-cta">
-            <span className="landing-start">▶ PRESS START</span>
-            <button className="gbtn" onClick={handleGoogleSignIn}>
-              <IconGoogle style={{ width: 21, height: 21 }} /> Continue with Google
-            </button>
-            <span className="landing-note">free · saves your library · unlocks stats</span>
-          </div>
 
-          <div className="anon-section">
-            <div className="anon-divider">
-              <div className="rule" /> or try without signing in <div className="rule" />
-            </div>
-            <form className="anon-form" onSubmit={handleAnonPreview}>
+          {/* 3. Steam input — hero CTA */}
+          <div className="hero-steam">
+            <form className="hero-form" onSubmit={handleAnonPreview}>
               <input
-                className="anon-input"
-                placeholder="Paste your Steam ID, username, or profile URL…"
+                className="hero-input"
+                placeholder="Steam ID, username, or profile URL…"
                 value={input}
                 onChange={e => setInput(e.target.value)}
+                autoFocus
               />
-              <button className="btn btn-outline anon-btn" type="submit" disabled={!input.trim()}>
-                Preview <IconArrow style={{ width: 16, height: 16 }} />
+              <button className="hero-btn" type="submit" disabled={!input.trim()}>
+                Browse my library <IconArrow style={{ width: 18, height: 18 }} />
               </button>
             </form>
-            <div className="anon-note">
-              Find your ID at <strong>steamid.io</strong>
+            <div className="hero-hint">
+              Accepts steamcommunity.com/id/username, /profiles/ID, or a plain username
               {existingId && (
-                <span> · <button className="anon-resume" onClick={() => navigate('/library')}>Resume last session ↗</button></span>
+                <> · <button className="anon-resume" onClick={() => navigate('/library')}>Resume last session ↗</button></>
               )}
             </div>
             <div className="anon-perks">
               <span className="perk-yes">✓ Browse library</span>
               <span className="perk-yes">✓ Use the picker</span>
-              <span className="perk-locked">★ Stats need a free account</span>
-              <span className="perk-locked">★ Settings need a free account</span>
+              <span className="perk-locked">★ Stats &amp; Settings need a free account</span>
             </div>
           </div>
+
+          {/* 4. Google sign-in — secondary */}
+          <div className="landing-signin">
+            <div className="anon-divider">
+              <div className="rule" /> or sign in to save your library <div className="rule" />
+            </div>
+            <button className="gbtn" onClick={handleGoogleSignIn}>
+              <IconGoogle style={{ width: 21, height: 21 }} /> Continue with Google
+            </button>
+            <span className="landing-note">free · saves your library · unlocks stats &amp; settings</span>
+          </div>
+
         </div>
 
+        {/* Feature cards */}
         <div className="feature-grid">
           {features.map((f, i) => (
             <div key={i} className="card feature">

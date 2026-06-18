@@ -7,20 +7,9 @@ if (!$user) json_out(['error' => 'Unauthenticated'], 401);
 $input = trim($_POST['steam_id'] ?? '');
 if (!$input) json_out(['error' => 'Please enter a Steam ID or username.'], 400);
 
-// Resolve to SteamID64 — accept the 17-digit ID directly, a vanity username,
-// or a full steamcommunity.com profile URL
-if (preg_match('/^76561\d{12}$/', $input)) {
-    $steamId = $input;
-} else {
-    // Strip full URL to just the vanity part
-    $vanity = preg_replace('|https?://steamcommunity\.com/id/([^/?#]+).*|', '$1', $input);
-    $vanity = trim($vanity, '/');
-
-    $res = json_decode(curl_get(steam_url('ISteamUser/ResolveVanityURL/v1', ['vanityurl' => $vanity])), true);
-    if (($res['response']['success'] ?? 0) !== 1) {
-        json_out(['error' => 'Could not find that Steam account. Paste your 17-digit Steam ID (find it at steamid.io).'], 400);
-    }
-    $steamId = $res['response']['steamid'];
+$steamId = resolve_steam_id($input);
+if (!$steamId) {
+    json_out(['error' => 'Could not find that Steam account. Try your 17-digit Steam ID, username, or profile URL.'], 400);
 }
 
 // Fetch public profile to confirm account exists and get display name/avatar

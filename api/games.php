@@ -8,15 +8,9 @@ if (!$user) {
     $steam_id = trim($_GET['steam_id'] ?? '');
     if (!$steam_id) json_out(['error' => 'Not authenticated'], 401);
 
-    // Resolve vanity URL or username to SteamID64 if needed
-    if (!preg_match('/^76561\d{12}$/', $steam_id)) {
-        $vanity = preg_replace('|https?://steamcommunity\.com/id/([^/?#]+).*|', '$1', $steam_id);
-        $vanity = trim($vanity, '/');
-        $res    = json_decode(curl_get(steam_url('ISteamUser/ResolveVanityURL/v1', ['vanityurl' => $vanity])), true);
-        if (($res['response']['success'] ?? 0) !== 1) {
-            json_out(['error' => 'Could not find that Steam account. Check the ID or make sure your profile is public.'], 404);
-        }
-        $steam_id = $res['response']['steamid'];
+    $steam_id = resolve_steam_id($steam_id);
+    if (!$steam_id) {
+        json_out(['error' => 'Could not find that Steam account. Check the ID or make sure your profile is public.'], 404);
     }
 
     $url  = steam_url('IPlayerService/GetOwnedGames/v1', [

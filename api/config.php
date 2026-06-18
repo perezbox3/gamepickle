@@ -98,3 +98,26 @@ function steam_url(string $endpoint, array $params = []): string {
     $params['format'] = 'json';
     return 'https://api.steampowered.com/' . $endpoint . '?' . http_build_query($params);
 }
+
+// Resolve any Steam input to a SteamID64 string, or return null on failure.
+// Accepts: 17-digit SteamID64, steamcommunity.com/profiles/ID, steamcommunity.com/id/vanity, plain vanity name.
+function resolve_steam_id(string $input): ?string {
+    $input = trim($input);
+
+    // Direct SteamID64
+    if (preg_match('/^76561\d{12}$/', $input)) return $input;
+
+    // steamcommunity.com/profiles/76561... — ID is in the URL itself
+    if (preg_match('|steamcommunity\.com/profiles/(\d{17})|', $input, $m)) return $m[1];
+
+    // steamcommunity.com/id/vanityname — need API lookup
+    if (preg_match('|steamcommunity\.com/id/([^/?#]+)|', $input, $m)) {
+        $vanity = $m[1];
+    } else {
+        // Treat plain text as a vanity name
+        $vanity = rtrim($input, '/');
+    }
+
+    $res = json_decode(curl_get(steam_url('ISteamUser/ResolveVanityURL/v1', ['vanityurl' => $vanity])), true);
+    return ($res['response']['success'] ?? 0) === 1 ? $res['response']['steamid'] : null;
+}
