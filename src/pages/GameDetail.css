@@ -1,0 +1,120 @@
+.gd-page { padding-top: 24px; padding-bottom: 60px; }
+
+.gd-back { margin-bottom: 18px; color: var(--ink-soft); }
+.gd-back:hover { color: var(--ink); }
+
+/* Hero image */
+.gd-hero {
+  width: 100%; border-radius: var(--radius-lg);
+  overflow: hidden; border: var(--bd-thick);
+  box-shadow: var(--shadow-lg); margin-bottom: 24px;
+  background: var(--paper-2);
+  aspect-ratio: 460 / 215;
+}
+.gd-cover {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.gd-cover-fallback {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  background: var(--paper-2);
+}
+.gd-cover-fallback span {
+  font-family: var(--font-display); font-size: 48px; color: var(--ink-soft); opacity: .4;
+}
+
+/* Title row */
+.gd-title-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  justify-content: space-between; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.gd-title {
+  font-size: clamp(20px, 4vw, 34px); font-weight: 900;
+  letter-spacing: -0.02em; line-height: 1.15; flex: 1; min-width: 0;
+}
+.gd-steam-btn { flex-shrink: 0; margin-top: 4px; white-space: nowrap; }
+
+/* Badges */
+.gd-badges {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;
+}
+.gd-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 13px; border-radius: 100px; border: var(--bd);
+  font-family: var(--font-mono); font-size: 15px; line-height: 1;
+  box-shadow: 2px 2px 0 var(--ink); background: var(--card); white-space: nowrap;
+}
+.gd-badge-genre { background: var(--brine); }
+.gd-badge-meta  { background: var(--pickle-bright); }
+.gd-badge-meta.good { background: var(--pickle-bright); }
+.gd-badge-meta.mid  { background: var(--brine); }
+.gd-badge-meta.low  { background: var(--paper-2); }
+.gd-badge-recent { background: var(--pickle); color: var(--paper); }
+.gd-badge-play  { background: var(--paper-2); }
+
+/* Playtime */
+.gd-playtime {
+  display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;
+  padding: 18px 22px; background: var(--card); border: var(--bd-thick);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+  margin-bottom: 28px;
+}
+.gd-stat {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-ui);
+}
+.gd-stat-val {
+  font-size: 22px; font-weight: 900; letter-spacing: -0.02em; line-height: 1;
+}
+.gd-stat-lbl { font-size: 12px; color: var(--ink-soft); font-weight: 600; margin-top: 2px; }
+.gd-unplayed {
+  font-family: var(--font-mono); font-size: 15px; color: var(--ink-soft);
+  align-self: center;
+}
+
+/* Body */
+.gd-body { display: flex; flex-direction: column; gap: 28px; }
+
+.gd-loading { display: flex; flex-direction: column; gap: 0; }
+.gd-error { font-family: var(--font-mono); font-size: 15px; color: var(--spicy); }
+
+.gd-description {
+  font-size: 16px; font-weight: 500; color: var(--ink-soft);
+  line-height: 1.75; max-width: 720px;
+}
+
+/* Screenshots */
+.gd-section-label {
+  font-family: var(--font-mono); font-size: 17px; color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+.gd-screenshots {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+}
+@media (min-width: 640px) { .gd-screenshots { grid-template-columns: repeat(4, 1fr); } }
+.gd-screenshot {
+  width: 100%; border-radius: var(--radius); border: var(--bd);
+  box-shadow: var(--shadow-sm); display: block;
+  transition: transform .12s var(--ease), box-shadow .12s var(--ease);
+}
+.gd-screenshot:hover { transform: translate(-2px,-2px); box-shadow: var(--shadow); }
+
+/* Feature tags */
+.gd-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.gd-tag {
+  padding: 5px 12px; background: var(--paper-2); border: var(--bd);
+  border-radius: 6px; font-family: var(--font-mono); font-size: 14px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+/* Meta grid */
+.gd-meta-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+  padding: 20px; background: var(--card); border: var(--bd-thick);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+}
+@media (max-width: 520px) { .gd-meta-grid { grid-template-columns: 1fr; } }
+.gd-meta-key {
+  font-family: var(--font-mono); font-size: 14px; color: var(--ink-soft); margin-bottom: 3px;
+}
+.gd-meta-val { font-size: 15px; font-weight: 700; }

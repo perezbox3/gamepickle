@@ -114,7 +114,8 @@
 }
 
 /* ---------- GameCard ---------- */
-.game-card { cursor: pointer; transition: transform .14s var(--ease); min-width: 0; }
+.game-card { cursor: pointer; transition: transform .14s var(--ease); min-width: 0; color: var(--ink); }
+.game-card-link { text-decoration: none; display: block; }
 /* Steam header.jpg is 460×215 — use landscape ratio instead of 1:1 square */
 .game-card .cover { aspect-ratio: 460/215; }
 .game-card:hover { transform: translateY(-3px) rotate(-1deg); }

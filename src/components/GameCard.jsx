@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 function IconClock(p) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
@@ -35,9 +37,9 @@ export function Badge({ kind = 'muted', children, icon: Icon }) {
   )
 }
 
-export default function GameCard({ game, rank }) {
-  return (
-    <div className="game-card">
+export default function GameCard({ game, rank, linkState }) {
+  const inner = (
+    <>
       <div className="game-card-art">
         <CoverArt game={game} />
         {rank && <span className={`rank-chip rank-${rank}`}>#{rank}</span>}
@@ -53,6 +55,15 @@ export default function GameCard({ game, rank }) {
           </span>
         </div>
       </div>
-    </div>
+    </>
   )
+
+  if (game.id && game.app_id) {
+    return (
+      <Link to={`/game/${game.app_id}`} state={linkState ?? { game, from: '/library' }} className="game-card game-card-link">
+        {inner}
+      </Link>
+    )
+  }
+  return <div className="game-card">{inner}</div>
 }

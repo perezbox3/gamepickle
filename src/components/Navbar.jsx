@@ -7,6 +7,9 @@ function IconLibrary(p) {
 function IconDice(p) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/></svg>
 }
+function IconBarChart(p) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+}
 function IconSettings(p) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
 }
@@ -24,8 +27,9 @@ export default function Navbar({ user, onSignOut }) {
   const [open, setOpen] = useState(false)
 
   const navItems = [
-    { to: '/library', label: 'Library',    Icon: IconLibrary  },
-    { to: '/pick',    label: 'Pick a Game', Icon: IconDice     },
+    { to: '/library',  label: 'Library',    Icon: IconLibrary  },
+    { to: '/pick',     label: 'Pick a Game', Icon: IconDice     },
+    ...(user ? [{ to: '/stats',    label: 'Stats',    Icon: IconBarChart }] : []),
     ...(user ? [{ to: '/settings', label: 'Settings', Icon: IconSettings }] : []),
   ]
 

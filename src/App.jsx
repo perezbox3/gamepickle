@@ -7,6 +7,8 @@ import Landing from './pages/Landing'
 import Library from './pages/Library'
 import Picker from './pages/Picker'
 import Settings from './pages/Settings'
+import GameDetail from './pages/GameDetail'
+import Stats from './pages/Stats'
 import { getMe, logout, getAnonSteamId, clearAnonSteamId } from './lib/auth'
 
 const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED === 'true'
@@ -109,6 +111,22 @@ export default function App() {
             <AuthedRoute user={user} loading={loading}>
               {withNav(Settings, { refreshUser })}
             </AuthedRoute>
+          }
+        />
+        <Route
+          path="/stats"
+          element={
+            <AuthedRoute user={user} loading={loading}>
+              {withNav(Stats)}
+            </AuthedRoute>
+          }
+        />
+        <Route
+          path="/game/:appId"
+          element={
+            <SteamRoute user={user} loading={loading}>
+              {withNav(GameDetail)}
+            </SteamRoute>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
