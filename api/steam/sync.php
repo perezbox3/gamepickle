@@ -12,12 +12,17 @@ $steamId = $row->fetchColumn();
 if (!$steamId) json_out(['error' => 'No Steam account linked. Link one first in Settings.'], 400);
 
 // Fetch full game list from Steam
-$res = json_decode(curl_get(steam_url('IPlayerService/GetOwnedGames/v1', [
+$raw = curl_get(steam_url('IPlayerService/GetOwnedGames/v1', [
     'steamid'                  => $steamId,
     'include_appinfo'          => 1,
     'include_played_free_games'=> 1,
-])), true);
+]));
 
+if ($raw === false) {
+    json_out(['error' => 'Steam API is unavailable. Please try again in a moment.'], 502);
+}
+
+$res   = json_decode($raw, true);
 $games = $res['response']['games'] ?? [];
 
 if (empty($games)) {
@@ -25,7 +30,8 @@ if (empty($games)) {
 }
 
 // Upsert into steam_games — INSERT ... ON DUPLICATE KEY UPDATE so re-syncs update playtime
-$stmt = db()->prepare(
+$db   = db();
+$stmt = $db->prepare(
     'INSERT INTO steam_games (user_id, app_id, name, playtime_mins, playtime_2weeks, img_icon_url)
      VALUES (?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
@@ -35,18 +41,22 @@ $stmt = db()->prepare(
        img_icon_url=VALUES(img_icon_url)'
 );
 
-$db = db();
 $db->beginTransaction();
-foreach ($games as $g) {
-    $stmt->execute([
-        $user['id'],
-        $g['appid'],
-        $g['name'],
-        $g['playtime_forever'] ?? 0,
-        $g['playtime_2weeks']  ?? 0,
-        $g['img_icon_url']     ?? null,
-    ]);
+try {
+    foreach ($games as $g) {
+        $stmt->execute([
+            $user['id'],
+            $g['appid'],
+            $g['name'],
+            $g['playtime_forever'] ?? 0,
+            $g['playtime_2weeks']  ?? 0,
+            $g['img_icon_url']     ?? null,
+        ]);
+    }
+    $db->commit();
+} catch (\Throwable $e) {
+    $db->rollBack();
+    json_out(['error' => 'Sync failed: database error. Please try again.'], 500);
 }
-$db->commit();
 
 json_out(['ok' => true, 'synced' => count($games)]);

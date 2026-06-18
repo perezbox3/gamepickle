@@ -15,16 +15,21 @@ if ($param_steam_id) {
     }
 
     // Fetch profile for display name + avatar
-    $profile_res = json_decode(curl_get(steam_url('ISteamUser/GetPlayerSummaries/v2', ['steamids' => $steam_id])), true);
-    $player      = $profile_res['response']['players'][0] ?? null;
+    $profile_raw = curl_get(steam_url('ISteamUser/GetPlayerSummaries/v2', ['steamids' => $steam_id]));
+    $player      = $profile_raw !== false
+        ? (json_decode($profile_raw, true)['response']['players'][0] ?? null)
+        : null;
 
     // Fetch owned games
-    $games_res = json_decode(curl_get(steam_url('IPlayerService/GetOwnedGames/v1', [
+    $games_raw = curl_get(steam_url('IPlayerService/GetOwnedGames/v1', [
         'steamid'                   => $steam_id,
         'include_appinfo'           => 1,
         'include_played_free_games' => 1,
-    ])), true);
-    $raw = $games_res['response']['games'] ?? [];
+    ]));
+    if ($games_raw === false) {
+        json_out(['error' => 'Steam API is unavailable. Please try again in a moment.'], 502);
+    }
+    $raw = json_decode($games_raw, true)['response']['games'] ?? [];
 
     $games = array_map(fn($g) => [
         'id'             => (string) $g['appid'],

@@ -26,9 +26,18 @@ $skip = db()->prepare('UPDATE steam_games SET store_fetched=1 WHERE id=?');
 
 $enriched = 0;
 foreach ($games as $g) {
-    $url  = 'https://store.steampowered.com/api/appdetails?appids=' . $g['app_id'] . '&filters=basic,genres,metacritic,categories';
-    $resp = json_decode(curl_get($url), true);
-    $data = $resp[(string) $g['app_id']]['data'] ?? null;
+    $url = 'https://store.steampowered.com/api/appdetails?appids=' . $g['app_id'] . '&filters=basic,genres,metacritic,categories';
+    $raw = curl_get($url);
+
+    // curl_get returns false on network error / HTTP 5xx — do not mark as fetched so we retry next time
+    if ($raw === false) {
+        usleep(800000);
+        continue;
+    }
+
+    $resp = json_decode($raw, true);
+    $item = $resp[(string) $g['app_id']] ?? null;
+    $data = $item['data'] ?? null;
 
     if ($data) {
         $genre       = $data['genres'][0]['description'] ?? null;
@@ -39,9 +48,11 @@ foreach ($games as $g) {
         $app_type    = $data['type'] ?? 'game'; // game | dlc | application | tool | demo | music
         $upd->execute([$genre, $metacritic, $multiplayer, $app_type, $g['id']]);
         $enriched++;
-    } else {
+    } elseif (isset($item['success']) && $item['success'] === false) {
+        // Steam confirmed this app has no store page — safe to mark as permanently fetched
         $skip->execute([$g['id']]);
     }
+    // If neither: unexpected response shape — leave store_fetched=0 and retry next time
 
     usleep(800000); // 800ms between requests to stay within Steam rate limits
 }

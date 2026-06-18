@@ -62,10 +62,12 @@ function set_session_cookie(string $sid): void {
 function http_post(string $url, array $data): string {
     $ch = curl_init($url);
     curl_setopt_array($ch, [
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => http_build_query($data),
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
+        CURLOPT_POST             => true,
+        CURLOPT_POSTFIELDS       => http_build_query($data),
+        CURLOPT_RETURNTRANSFER   => true,
+        CURLOPT_HTTPHEADER       => ['Content-Type: application/x-www-form-urlencoded'],
+        CURLOPT_TIMEOUT          => 10,
+        CURLOPT_CONNECTTIMEOUT   => 5,
     ]);
     $res = curl_exec($ch);
     curl_close($ch);
@@ -75,21 +77,30 @@ function http_post(string $url, array $data): string {
 function http_get(string $url, string $bearer): string {
     $ch = curl_init($url);
     curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $bearer],
+        CURLOPT_RETURNTRANSFER   => true,
+        CURLOPT_HTTPHEADER       => ['Authorization: Bearer ' . $bearer],
+        CURLOPT_TIMEOUT          => 10,
+        CURLOPT_CONNECTTIMEOUT   => 5,
     ]);
     $res = curl_exec($ch);
     curl_close($ch);
     return (string) $res;
 }
 
-// Plain GET with no auth header — used for Steam API (key is in query params)
-function curl_get(string $url): string {
+// Plain GET with no auth header — used for Steam/SteamSpy APIs (key is in query params).
+// Returns false on network error or HTTP 5xx so callers can distinguish "down" from "no data".
+function curl_get(string $url): string|false {
     $ch = curl_init($url);
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10]);
-    $res = curl_exec($ch);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_CONNECTTIMEOUT => 5,
+    ]);
+    $res  = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    return (string) $res;
+    if ($res === false || $code >= 500) return false;
+    return $res;
 }
 
 // Build a Steam API URL with the key baked in
