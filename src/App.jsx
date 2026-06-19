@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { trackPageview } from './lib/analytics'
 import './App.css'
 import PickleField from './components/PickleField'
 import Navbar from './components/Navbar'
@@ -53,6 +54,11 @@ function SteamRoute({ user, loading, children }) {
 
 export default function App() {
   const { user, loading, setUser } = useAuth()
+  const location = useLocation()
+
+  useEffect(() => {
+    trackPageview(location.pathname)
+  }, [location.pathname])
 
   async function refreshUser() {
     const u = await getMe()
