@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { GENRES } from '../lib/games'
 import './Settings.css'
 
@@ -31,7 +32,7 @@ const sessions = [
   { v: 'chill', label: 'No clock' },
 ]
 
-export default function Settings({ user, refreshUser }) {
+export default function Settings({ user, refreshUser, onSignOut }) {
   // Steam link state
   const [steamInput, setSteamInput]     = useState('')
   const [steamLinked, setSteamLinked]   = useState(!!user?.steam_id)
@@ -45,6 +46,25 @@ export default function Settings({ user, refreshUser }) {
   const [enriching, setEnriching]     = useState(false)
   const [linkError, setLinkError]     = useState('')
   const [syncMsg, setSyncMsg]         = useState('')
+
+  // Account deletion
+  const [deleteConfirm, setDeleteConfirm] = useState('')
+  const [deleting, setDeleting]           = useState(false)
+  const [deleteError, setDeleteError]     = useState('')
+
+  async function handleDeleteAccount() {
+    if (deleteConfirm !== 'DELETE') return
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      const res = await fetch('/api/auth/delete.php', { method: 'POST' })
+      if (!res.ok) throw new Error()
+      onSignOut()
+    } catch {
+      setDeleteError('Could not delete account. Please try again.')
+      setDeleting(false)
+    }
+  }
 
   // Picker settings — loaded from DB on mount
   const [banned, setBanned]     = useState(() => new Set())
@@ -297,7 +317,7 @@ export default function Settings({ user, refreshUser }) {
         </div>
 
         {/* Save */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingBottom: 60 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <button className="btn btn-primary" onClick={saveSettings} disabled={saving || settingsLoading}>
             <IconCheck style={{ width: 17, height: 17 }} />
             {saving ? 'Saving…' : 'Save changes'}
@@ -312,6 +332,37 @@ export default function Settings({ user, refreshUser }) {
               {saveError}
             </span>
           )}
+        </div>
+
+        {/* Danger zone */}
+        <div className="card set-card" style={{ borderColor: 'var(--spicy)', marginTop: 32, marginBottom: 60 }}>
+          <div className="sc-head"><h3 style={{ color: 'var(--spicy)' }}>Danger zone</h3></div>
+          <p className="sc-desc">
+            Permanently deletes your account, all sessions, your Steam library data, and all settings.
+            This cannot be undone. See our <Link to="/privacy" style={{ color: 'var(--spicy)' }}>privacy policy</Link> for details on what data we store.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 400 }}>
+            <input
+              className="lib-search"
+              style={{ padding: '8px 12px', fontFamily: 'var(--font-mono)', fontSize: 13 }}
+              placeholder='Type DELETE to confirm'
+              value={deleteConfirm}
+              onChange={e => { setDeleteConfirm(e.target.value); setDeleteError('') }}
+            />
+            <button
+              className="btn btn-sm"
+              style={{ background: 'var(--spicy)', color: '#fff', border: '2px solid var(--ink)', boxShadow: '3px 3px 0 var(--ink)', alignSelf: 'flex-start' }}
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirm !== 'DELETE' || deleting}
+            >
+              {deleting ? 'Deleting…' : 'Delete my account'}
+            </button>
+            {deleteError && (
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--spicy)' }}>
+                {deleteError}
+              </span>
+            )}
+          </div>
         </div>
 
       </div>

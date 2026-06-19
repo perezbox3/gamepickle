@@ -1,4 +1,24 @@
 <?php
+// Never leak stack traces, DSN, or schema details to HTTP responses in production.
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+set_exception_handler(function (\Throwable $e): never {
+    $logDir = dirname(__DIR__) . '/logs';
+    if (!is_dir($logDir)) @mkdir($logDir, 0750);
+    @error_log(
+        date('Y-m-d H:i:s') . ' [gamepickle] ' . $e->getMessage()
+        . ' in ' . $e->getFile() . ':' . $e->getLine() . PHP_EOL,
+        3,
+        $logDir . '/error.log'
+    );
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+    }
+    echo json_encode(['error' => 'An unexpected error occurred. Please try again.']);
+    exit;
+});
+
 // Load .env from project root (one level above api/)
 $_envFile = dirname(__DIR__) . '/.env';
 if (file_exists($_envFile)) {
@@ -35,9 +55,15 @@ function json_out(mixed $data, int $code = 200): never {
 }
 
 // Returns user row from DB if session cookie is valid, or null.
+// Opportunistically prunes expired sessions (~1% of calls) to keep the table bounded.
 function get_session_user(): ?array {
     $sid = $_COOKIE['gp_sid'] ?? '';
     if (strlen($sid) !== 64) return null;
+
+    if (random_int(0, 99) === 0) {
+        db()->exec('DELETE FROM sessions WHERE expires_at < NOW()');
+    }
+
     $stmt = db()->prepare(
         'SELECT u.id, u.email, u.name, u.avatar, u.steam_id, u.steam_name, u.steam_avatar
          FROM sessions s
@@ -62,10 +88,12 @@ function set_session_cookie(string $sid): void {
 function http_post(string $url, array $data): string {
     $ch = curl_init($url);
     curl_setopt_array($ch, [
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => http_build_query($data),
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
+        CURLOPT_POST             => true,
+        CURLOPT_POSTFIELDS       => http_build_query($data),
+        CURLOPT_RETURNTRANSFER   => true,
+        CURLOPT_HTTPHEADER       => ['Content-Type: application/x-www-form-urlencoded'],
+        CURLOPT_TIMEOUT          => 10,
+        CURLOPT_CONNECTTIMEOUT   => 5,
     ]);
     $res = curl_exec($ch);
     curl_close($ch);
@@ -75,21 +103,30 @@ function http_post(string $url, array $data): string {
 function http_get(string $url, string $bearer): string {
     $ch = curl_init($url);
     curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $bearer],
+        CURLOPT_RETURNTRANSFER   => true,
+        CURLOPT_HTTPHEADER       => ['Authorization: Bearer ' . $bearer],
+        CURLOPT_TIMEOUT          => 10,
+        CURLOPT_CONNECTTIMEOUT   => 5,
     ]);
     $res = curl_exec($ch);
     curl_close($ch);
     return (string) $res;
 }
 
-// Plain GET with no auth header — used for Steam API (key is in query params)
-function curl_get(string $url): string {
+// Plain GET with no auth header — used for Steam/SteamSpy APIs (key is in query params).
+// Returns false on network error or HTTP 5xx so callers can distinguish "down" from "no data".
+function curl_get(string $url): string|false {
     $ch = curl_init($url);
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10]);
-    $res = curl_exec($ch);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_CONNECTTIMEOUT => 5,
+    ]);
+    $res  = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    return (string) $res;
+    if ($res === false || $code >= 500) return false;
+    return $res;
 }
 
 // Build a Steam API URL with the key baked in

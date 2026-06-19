@@ -1,6 +1,5 @@
 import { useNavigate, Link } from 'react-router-dom'
 import { useState } from 'react'
-import { setAnonSteamId, getAnonSteamId } from '../lib/auth'
 import './Landing.css'
 
 function IconGoogle(p) {
@@ -46,16 +45,12 @@ export default function Landing({ user, onSignOut }) {
     const val = input.trim()
     if (!val) return
     if (user) {
-      // Signed-in: pass as URL param so their own library stays separate
       navigate(`/library?steam_id=${encodeURIComponent(val)}`)
     } else {
-      // Anonymous: store in localStorage
-      setAnonSteamId(val)
-      navigate('/library')
+      // Browsing requires a session — send them through Google sign-in
+      window.location.href = '/api/auth/login.php'
     }
   }
-
-  const existingId = !user && getAnonSteamId()
 
   return (
     <div className="landing">
@@ -86,16 +81,11 @@ export default function Landing({ user, onSignOut }) {
             </form>
             <div className="hero-hint">
               Accepts steamcommunity.com/id/username, /profiles/ID, or a plain username
-              {existingId && (
-                <> · <button className="anon-resume" onClick={() => navigate('/library')}>Resume last session ↗</button></>
-              )}
             </div>
             <div className="anon-perks">
               <span className="perk-yes">✓ Browse any library</span>
               <span className="perk-yes">✓ Use the picker</span>
-              {user
-                ? <span className="perk-yes">✓ Stats &amp; Settings unlocked</span>
-                : <span className="perk-locked">★ Stats &amp; Settings need a free account</span>}
+              <span className="perk-yes">✓ Stats &amp; Settings</span>
             </div>
           </div>
 
@@ -144,6 +134,8 @@ export default function Landing({ user, onSignOut }) {
 
       <div className="landing-foot">
         <span>Find more of my projects at <a href="https://perezbox3.com" target="_blank" rel="noopener noreferrer" className="b">perezbox3.com</a></span>
+        <span style={{ margin: '0 10px', opacity: 0.4 }}>·</span>
+        <Link to="/privacy" style={{ color: 'var(--ink-soft)', fontSize: 12 }}>Privacy policy</Link>
       </div>
     </div>
   )

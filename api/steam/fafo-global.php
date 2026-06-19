@@ -10,7 +10,11 @@ $cache_ttl  = 3600;
 if (!file_exists($cache_file) || (time() - filemtime($cache_file)) > $cache_ttl) {
     $raw = curl_get('https://steamspy.com/api.php?request=all&page=0');
     if ($raw && strlen($raw) > 1000) {
-        file_put_contents($cache_file, $raw);
+        // Write to a temp file then rename — rename() is atomic on POSIX, preventing
+        // a concurrent request from reading a partially-written cache file.
+        $tmp = $cache_file . '.tmp.' . getmypid();
+        file_put_contents($tmp, $raw, LOCK_EX);
+        rename($tmp, $cache_file);
     }
 }
 

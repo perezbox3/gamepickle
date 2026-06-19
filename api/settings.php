@@ -49,3 +49,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     json_out(['ok' => true]);
 }
+
+json_out(['error' => 'Method not allowed'], 405);

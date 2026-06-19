@@ -8,6 +8,9 @@ if (!$user['steam_id']) json_out(['error' => 'no_steam', 'message' => 'Link your
 // ── COMPARE mode ── ?compare=STEAM_ID ────────────────────────────────────────
 if (!empty($_GET['compare'])) {
     $friend_id = trim($_GET['compare']);
+    if (!preg_match('/^76561\d{12}$/', $friend_id)) {
+        json_out(['error' => 'invalid_id', 'message' => 'Invalid Steam ID. Please use a 17-digit SteamID64.'], 400);
+    }
 
     // User's library from DB
     $stmt = db()->prepare(
@@ -20,13 +23,16 @@ if (!empty($_GET['compare'])) {
     }
 
     // Friend's library from Steam API
-    $res = json_decode(curl_get(steam_url('IPlayerService/GetOwnedGames/v1', [
+    $friend_curl = curl_get(steam_url('IPlayerService/GetOwnedGames/v1', [
         'steamid'                   => $friend_id,
         'include_appinfo'           => 1,
         'include_played_free_games' => 1,
-    ])), true);
+    ]));
+    if ($friend_curl === false) {
+        json_out(['error' => 'steam_down', 'message' => 'Steam API is unavailable. Please try again in a moment.'], 502);
+    }
 
-    $friend_raw = $res['response']['games'] ?? null;
+    $friend_raw = json_decode($friend_curl, true)['response']['games'] ?? null;
 
     if ($friend_raw === null) {
         json_out(['error' => 'private', 'message' => "This friend's library is private — they need to set it to Public in Steam privacy settings."]);
@@ -85,11 +91,16 @@ if (!empty($_GET['compare'])) {
 // ── LIST mode ── no params ────────────────────────────────────────────────────
 set_time_limit(30);
 
-$res     = json_decode(curl_get(steam_url('ISteamUser/GetFriendList/v1', [
+$friends_raw = curl_get(steam_url('ISteamUser/GetFriendList/v1', [
     'steamid'      => $user['steam_id'],
     'relationship' => 'friend',
-])), true);
-$friends = $res['friendslist']['friends'] ?? null;
+]));
+
+if ($friends_raw === false) {
+    json_out(['error' => 'steam_down', 'message' => 'Steam API is unavailable. Please try again in a moment.'], 502);
+}
+
+$friends = json_decode($friends_raw, true)['friendslist']['friends'] ?? null;
 
 if ($friends === null) {
     // Null means the API rejected it — friend list is private

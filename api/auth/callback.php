@@ -1,7 +1,15 @@
 <?php
 require_once dirname(__DIR__) . '/config.php';
 
+session_set_cookie_params(['secure' => true, 'httponly' => true, 'samesite' => 'Lax', 'path' => '/']);
 session_start();
+
+// Check for Google error response first — state may be absent on denied consent (RFC 6749 §4.1.2.1)
+if (isset($_GET['error'])) {
+    unset($_SESSION['oauth_state']);
+    header('Location: ' . APP_URL . '/?error=access_denied');
+    exit;
+}
 
 // CSRF: verify state matches what we stored in login.php
 $expectedState = $_SESSION['oauth_state'] ?? '';
@@ -9,11 +17,6 @@ unset($_SESSION['oauth_state']);
 
 if (empty($_GET['state']) || !hash_equals($expectedState, $_GET['state'])) {
     header('Location: ' . APP_URL . '/?error=invalid_state');
-    exit;
-}
-
-if (isset($_GET['error'])) {
-    header('Location: ' . APP_URL . '/?error=access_denied');
     exit;
 }
 
@@ -53,9 +56,14 @@ $db->prepare(
      ON DUPLICATE KEY UPDATE email=VALUES(email), name=VALUES(name), avatar=VALUES(avatar)'
 )->execute([$profile['id'], $profile['email'], $profile['name'] ?? null, $profile['picture'] ?? null]);
 
-$userId = $db->prepare('SELECT id FROM users WHERE google_id = ?');
-$userId->execute([$profile['id']]);
-$userId = $userId->fetchColumn();
+$userStmt = $db->prepare('SELECT id FROM users WHERE google_id = ?');
+$userStmt->execute([$profile['id']]);
+$userId = $userStmt->fetchColumn();
+
+if (!$userId) {
+    header('Location: ' . APP_URL . '/?error=login_failed');
+    exit;
+}
 
 // Create session (64-char hex = 32 random bytes)
 $sid = bin2hex(random_bytes(32));

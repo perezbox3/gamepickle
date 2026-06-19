@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import GameCard, { Badge, fmtHours } from '../components/GameCard'
-import { getAnonSteamId } from '../lib/auth'
 import './Library.css'
 
 function IconSearch(p) {
@@ -67,12 +66,10 @@ export default function Library({ user }) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  // URL param (signed-in user browsing another account) takes priority over localStorage
+  // URL param lets a signed-in user browse another Steam account
   const paramSteamId = searchParams.get('steam_id')
-  const anonId       = !user ? getAnonSteamId() : null
-  // browseId is the external Steam ID being viewed (either signed-in browse or anon)
-  const browseId     = paramSteamId || anonId
-  const isAnon       = !user && !!anonId       // not signed in, using localStorage
+  const browseId     = paramSteamId || null
+  const isAnon       = false
   const isBrowsing   = !!paramSteamId && !!user // signed-in user browsing another account
 
   const [games, setGames]     = useState([])
@@ -100,8 +97,12 @@ export default function Library({ user }) {
     setLoading(true)
 
     fetch(url)
-      .then(r => r.json())
+      .then(r => {
+        if (r.status === 401) { navigate('/'); return null }
+        return r.json()
+      })
       .then(data => {
+        if (!data) return
         if (Array.isArray(data)) {
           // Own library (authenticated, no steam_id param)
           setGames(data)

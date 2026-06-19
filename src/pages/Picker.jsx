@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CoverArt, Badge, fmtHours } from '../components/GameCard'
 import { QUIZ, scoreGame, pickGames, recordPick, isLikelyGame } from '../lib/games'
-import { getAnonSteamId } from '../lib/auth'
 import './Picker.css'
 
 function IconChevron(p) {
@@ -144,13 +143,7 @@ export default function Picker({ user }) {
   }, [games, bannedGenres])
 
   useEffect(() => {
-    const anonId = !user?.steam_id ? getAnonSteamId() : null
-    const url = user?.steam_id
-      ? '/api/games.php'
-      : anonId
-        ? `/api/games.php?steam_id=${encodeURIComponent(anonId)}`
-        : null
-
+    const url = user?.steam_id ? '/api/games.php' : null
     if (!url) { setLoading(false); return }
 
     fetch(url)
@@ -179,6 +172,15 @@ export default function Picker({ user }) {
 
   function computeResults(ans) {
     const picks = pickGames(games, ans, 3, bannedGenres)
+    if (picks.length === 0) {
+      // All eligible games were filtered out (too few games, heavy genre bans, etc.)
+      setResults([])
+      setRandomMode(false)
+      setGlobalMode(false)
+      setPhase('results')
+      window.scrollTo({ top: 0 })
+      return
+    }
     setResults(picks)
     setRandomMode(false)
     setGlobalMode(false)
@@ -322,6 +324,28 @@ export default function Picker({ user }) {
               <CoverArt game={reelGame} />
               <div className="reel-name">{reelGame.name}</div>
             </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  /* RESULTS — empty pool */
+  if (phase === 'results' && results && results.length === 0) {
+    return (
+      <div className="container">
+        <div className="pick-wrap">
+          <div className="results-head fade-up">
+            <div className="mono-label">no matches</div>
+            <h2>Nothing left in the <span className="gold">jar</span></h2>
+          </div>
+          <div className="card" style={{ padding: 24, maxWidth: 480 }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14, marginBottom: 16 }}>
+              Your genre bans and quiz answers filtered out everything. Try removing some genre bans in Settings, or hit FAFO to pick anything.
+            </p>
+            <button className="btn btn-outline" onClick={() => { setPhase('quiz'); setStep(0); setResults(null) }}>
+              Try again
+            </button>
           </div>
         </div>
       </div>
